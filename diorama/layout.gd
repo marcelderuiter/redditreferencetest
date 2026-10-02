@@ -448,7 +448,7 @@ func backdrop() -> void:
 		var w := r(2.0, 5.0)
 		box("brick", Vector3(x, top - 20.0, z), Vector3(w, 40.0, w * r(0.8, 2.0)), jit(col.darkened(0.2), 0.1))
 	for i in 16:
-		light(Vector3(r(-5.0, 60.0), r(-22.0, -8.0), r(0.0, 50.0)), 12.0, 20.0, Color(0.45, 0.58, 0.85))
+		light(Vector3(r(-5.0, 60.0), r(-22.0, -8.0), r(0.0, 50.0)), 12.0, 20.0, Color(0.6, 0.62, 0.75))
 	for i in 6:
 		var p := Vector3(r(-12.0, 66.0), r(-30.0, -8.0), r(-20.0, 60.0))
 		if p.x > 0.0 and p.x < 55.0 and p.z > 0.0:

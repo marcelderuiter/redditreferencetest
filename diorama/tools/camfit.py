@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Coordinate-descent fit of the default camera against the reference score.
+"""Coordinate-descent fit of the default camera against the raw score of ../tools/compare.py.
 Usage: tools/camfit.py yaw,pitch,dist,fov,tx,ty,tz [rounds]"""
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,9 +16,10 @@ cache = {}
 def score(c):
     key = ','.join(f'{v:g}' for v in c)
     if key not in cache:
-        out = subprocess.run([str(D / 'tools/capture.sh'), 'camfit', f'--cam={key}'], capture_output=True, text=True).stdout
-        line = [l for l in out.splitlines() if l.startswith('score')][-1]
-        cache[key] = float(line.split()[1])
+        out = subprocess.run([str(D / 'tools/capture.sh'), 'camfit', f'--cam={key}'], capture_output=True, text=True,
+                             env={**os.environ, 'RAW_ONLY': '1'}).stdout
+        line = [l for l in out.splitlines() if l.startswith('raw')][-1]
+        cache[key] = float(line.split()[2].split('/')[0])
         print(key, line, flush=True)
     return cache[key]
 

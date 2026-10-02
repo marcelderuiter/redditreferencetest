@@ -2,10 +2,11 @@
 
 A small explorable game built from scratch to match `reference/reference.png`:
 a candle-lit miniature dungeon of rooms on masonry piers above a blue-black
-abyss, joined by timber and brass bridges. It shares no code or assets with the
-rest of this repository. It is a self-contained Godot 4.7 project made of
-GDScript and shaders only, with no models or textures; every stone, plank,
-candle and figure is generated.
+abyss, joined by timber and brass bridges. The game shares no code or assets
+with the original game in `src/`, `godot/` and `godot_bridge/`, and it is
+measured with the repository's own `tools/`. It is a self-contained Godot 4.7
+project made of GDScript and shaders only, with no models or textures; every
+stone, plank, candle and figure is generated.
 
 ![Default view](docs/screenshot.png)
 
@@ -14,7 +15,7 @@ candle and figure is generated.
 ```sh
 godot --path diorama                       # play
 godot --path diorama -- --seed=3           # another seed (layout fixed, detail varies)
-diorama/tools/capture.sh TAG [--cam=...]   # render 1080x810 and score vs the reference
+diorama/tools/capture.sh TAG [--cam=...]   # raw capture, LUT fit, graded capture, score
 ```
 
 `tools/capture.sh` starts Xvfb when there is no display. On a GPU-less Linux box
@@ -30,7 +31,7 @@ caps lights per object.
 | Home / F12 / F1 / F11 | Reset camera / screenshot to `user://` / toggle help / fullscreen |
 
 User args (after `--`): `--seed=N --cam=yaw,pitch,dist,fov,tx,ty,tz --size=WxH
---capture=PATH --frames=N --nohud`.
+--capture=PATH --frames=N --nohud --lut=off|auto|PATH.cube --strength=0..1`.
 
 ## Layout
 
@@ -45,6 +46,7 @@ User args (after `--`): `--seed=N --cam=yaw,pitch,dist,fov,tx,ty,tz --size=WxH
   furniture, candles (with lights), treasure and painted miniature figures.
 - `walk.gd`: walkable surfaces (rects, ramps, bridge segments, circles). The
   hero picks the surface closest to its current height, and props block it.
+- `lut.gd`, `shaders/grade.gdshader`: `.cube` loader and the full-screen grade.
 - `shaders/kit.gdshader`: one procedural material for everything. It has
   modes for carved block (edge highlights from box-edge distance, a
   dry-brushed look), coursed masonry, wood grain, metal, carpet pattern and
@@ -52,28 +54,35 @@ User args (after `--`): `--seed=N --cam=yaw,pitch,dist,fov,tx,ty,tz --size=WxH
 
 ## Measuring
 
-`tools/score.py` is a scorer written for this build. It combines layout
-(correlation of blurred lightness), colour (OKLab error on a 16×12 grid), tone
-(lightness-histogram distance) and detail (fine-gradient energy) into 0–100.
-`tools/stats.py` prints lightness percentiles, and `tools/massdiff.py` shows
-where the light and dark masses differ. `tools/camfit.py` fits the default
-camera by coordinate descent on the score.
+Scoring uses the repository's own `tools/compare.py` and `tools/fit_lut.py`,
+unmodified. `tools/match.py` targets the original `godot/` project, so
+`diorama/tools/capture.sh TAG` runs the same loop against this project instead:
 
-There is no LUT or post-grade: all scores are straight renders.
+1. Capture the raw render (LUT off) at the reference size.
+2. Fit `luts/00_reference_match.cube` with `fit_lut.py --out`.
+3. Capture the graded render in-engine.
+4. Score both with `compare.py`.
 
-| Step | Score | Layout | Colour | Tone | Detail |
-| --- | --- | --- | --- | --- | --- |
-| First render (OpenGL fallback, top-down) | 50.6 | 0.35 | 0.36 | 0.66 | 0.87 |
-| Forward+ on lavapipe, exposure and camera pitch fixed | 57.0 | 0.47 | 0.47 | 0.72 | 0.73 |
-| Darker greyer stone, edge highlights, abyss lifted | 63.9 | 0.44 | 0.58 | 0.79 | 0.95 |
-| Foundations, trestles, less orange light, fitted camera | 66.6 | 0.46 | 0.55 | 0.89 | 0.97 |
-| Rooms re-placed to the reference footprint, refitted camera | 66.2 | 0.45 | 0.56 | 0.88 | 0.97 |
-| Bigger candles/figures, darker substructure, blue abyss light | 64.8 | 0.45 | 0.55 | 0.89 | 0.89 |
+`RAW_ONLY=1` stops after step 1 and its score.
 
-The last row trades a little score for a closer look by eye (the brighter, more
-uniform version scored higher). The remaining gap is mostly structural. The
-reference's rooms are built of chunkier, more irregular masonry, and its
-miniatures and props are far more detailed than these primitive-built stand-ins.
+The game applies the LUT itself (`lut.gd`, `shaders/grade.gdshader`, both
+written for this project; `--lut=off|auto|PATH`). The engine's graded capture
+matches `fit_lut.py`'s prediction to a mean difference of 0.55/255.
+`tools/camfit.py` fits the default camera on the raw score, and
+`tools/check.gd` checks walkability.
+
+Scores (seed 7, 1080×810, default camera, against the local reference):
+
+| Stage | Raw | Graded |
+| --- | --- | --- |
+| Layout, lighting and camera as first committed | 68.4 | 84.6 |
+| Abyss and background less blue (the LUT had been warming the shadows) | 76.6 | **85.8** |
+
+The fitted lightness curve is gentle (0.4→0.44, 0.8→0.74). The remaining
+penalty is mostly hue mix (too little pure orange) and local contrast (×0.88
+of the reference). Structurally, the reference's masonry is chunkier and more
+irregular, and its miniatures and props are far more detailed than these
+primitive-built stand-ins.
 
 ![Hero close-up](docs/closeup.png)
 

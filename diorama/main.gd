@@ -1,6 +1,7 @@
 extends Node3D
 ## Builds the diorama, the hero and the camera. User args (after `--`):
 ##   --seed=N  --capture=PATH  --frames=N  --size=WxH  --cam=yaw,pitch,dist,fov,tx,ty,tz  --nohud
+##   --lut=off|auto|PATH.cube  --strength=0..1   (auto = luts/00_reference_match.cube when present)
 
 const DEFAULT_CAM := [-1.0, -35.0, 69.0, 34.0, 28.0, -2.0, 21.5]
 
@@ -60,9 +61,35 @@ func _ready() -> void:
 	add_child(canvas)
 	canvas.add_child(hud)
 	hud.visible = not (args.has("nohud") or args.has("capture"))
+	make_grade()
 	if args.has("capture"):
 		frames_left = int(args.get("frames", "12"))
 	print("instances %d  batches %d  lights %d" % [count_instances(), layout.batches.size(), layout.lights.size()])
+
+func make_grade() -> void:
+	var which: String = args.get("lut", "auto")
+	if which == "off":
+		return
+	var path := "res://luts/00_reference_match.cube" if which == "auto" else which
+	if which == "auto" and not FileAccess.file_exists(path):
+		return
+	var tex := Lut.load_cube(path)
+	if tex == null:
+		return
+	var m := ShaderMaterial.new()
+	m.shader = load("res://shaders/grade.gdshader")
+	m.set_shader_parameter("lut", tex)
+	m.set_shader_parameter("lut_size", float(tex.get_width()))
+	m.set_shader_parameter("strength", float(args.get("strength", "1.0")))
+	var layer := CanvasLayer.new()
+	layer.layer = -1  # under the HUD
+	var rect := ColorRect.new()
+	rect.material = m
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(rect)
+	add_child(layer)
+	print("LUT ", path)
 
 func count_instances() -> int:
 	var n := 0
@@ -137,7 +164,7 @@ func make_resources() -> void:
 func make_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.16, 0.175, 0.22)
+	env.background_color = Color(0.18, 0.17, 0.18)
 	env.background_energy_multiplier = 1.6
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.32, 0.36, 0.48)
@@ -156,7 +183,7 @@ func make_environment() -> void:
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.15, 0.16, 0.21)
+	env.fog_light_color = Color(0.16, 0.155, 0.17)
 	env.fog_density = 0.0015
 	env.fog_light_energy = 1.6
 	env.fog_height = -6.0
