@@ -1,0 +1,10 @@
+/target/
+/godot_bridge/target/
+/godot/bin/
+/godot/.godot/
+/captures/
+__pycache__/
+
+# The reference image is supplied locally (see reference/README.md).
+/reference/*
+!/reference/README.md
