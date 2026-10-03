@@ -159,7 +159,9 @@ render with the freshly fitted LUT.
 | m19_clean_shadows | 32-bit shadow atlas removes false shadow bands (scene now too bright) | 61.3 | 84.6 |
 | m21_lift_darks | sun and ambient rebalanced | 72.1 | 84.6 |
 | m23_clutter | banners, sconces, wall candles, sacks, strewn coins | 69.6 | 84.4 |
-| m25_window_lights | bluish abyss fog, backdrop lights come from visible windows | **71.5** | **84.6** |
+| m25_window_lights | bluish abyss fog, backdrop lights come from visible windows | 71.5 | 84.6 |
+| m26_hall_spires | hall runner and knight moved to the reference's spot, tower pinnacles, neutral fog | 67.8 | 84.6 |
+| m27_hall_spires_bluefog | same with the bluish fog restored (final) | **70.9** | **84.6** |
 
 m18's 86.5 was partly an artefact. The 16-bit shadow banding darkened large
 areas in a way that happened to suit the histogram. Fixing it cost about 2

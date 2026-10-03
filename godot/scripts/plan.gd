@@ -102,8 +102,8 @@ static func build() -> Layout:
 	L.prop("sacks", "forge", 0.55, 0.9)
 	L.feature("sconce", "forge", "w", 0.4)
 	# Hall
-	L.prop("runner", "hall", 0.45, 0.47, {size = Vector2(1.6, 10.0)})
-	L.prop("statue_knight", "hall", 0.62, 0.38, {weapon = "sword"})
+	L.prop("runner", "hall", 0.45, 0.6, {size = Vector2(1.7, 9.0)})
+	L.prop("statue_knight", "hall", 0.62, 0.52, {weapon = "sword"})
 	L.prop("armor_stand", "hall", 0.9, 0.2)
 	for v in [0.12, 0.6, 0.78, 0.9]:
 		L.prop("candle_stand", "hall", 0.06, v)

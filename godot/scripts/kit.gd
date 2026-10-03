@@ -36,6 +36,7 @@ func _init(seed: int) -> void:
 	meshes.cyl = _cyl(16, 0.5, 0.5)
 	meshes.cyl8 = _cyl(8, 0.5, 0.5)
 	meshes.cone = _cyl(12, 0.0, 0.5)
+	meshes.spire = _cyl(4, 0.0, 0.7)
 	meshes.sphere = _sphere(12, 8)
 	meshes.ring = _torus(20, 6, 0.42, 0.5)
 	meshes.link = _torus(8, 4, 0.3, 0.5)

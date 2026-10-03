@@ -552,6 +552,12 @@ func _tower(r: Layout.Room, corner: String, height: float) -> void:
 	kit.put("slab", "floor", Vector3(crown.get_center().x, top + 0.31, crown.get_center().y), Vector3(crown.size.x - 0.2, 0.04, crown.size.y - 0.2), 0.0, kit.tint(STONE, 0.1))
 	if r.opts.get("tower_fire", false):
 		Props.brazier(kit, Vector3(foot.get_center().x, top + 0.33, foot.get_center().y))
+	elif height >= 3.3:
+		# Gothic pinnacle on the tallest towers, as on the reference's chapel.
+		var tc := foot.get_center()
+		kit.put("block", "stone", Vector3(tc.x, top + 0.55, tc.y), Vector3(0.75, 0.5, 0.75), 0.0, kit.tint(STONE, 0.12))
+		kit.put("spire", "stone", Vector3(tc.x, top + 1.35, tc.y), Vector3(0.85, 1.1, 0.85), 45.0, kit.tint(STONE, 0.12))
+		kit.put("sphere", "brass", Vector3(tc.x, top + 1.95, tc.y), Vector3(0.14, 0.14, 0.14))
 
 
 ## Hollow-looking solid of blocks on all four faces between y0 and y1.
