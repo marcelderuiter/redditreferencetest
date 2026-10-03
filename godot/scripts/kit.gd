@@ -19,6 +19,8 @@ class Batch:
 
 
 const NO_SHADOW := ["flame", "glow", "ember", "window_glow", "backdrop"]
+## Invisible geometry that only casts shadows (light blockers).
+const SHADOW_ONLY := ["occluder"]
 ## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
 const BACKDROP_LAYER := 2
 
@@ -44,7 +46,7 @@ func _init(seed: int) -> void:
 	meshes.link = _torus(8, 4, 0.3, 0.5)
 	meshes.flame = _sphere(8, 6)
 	for m in ["stone", "stone_dark", "floor", "wood", "wood_dark", "iron", "brass", "gold", "cloth",
-			"wax", "statue", "flame", "glow", "ember", "window_glow", "paper", "backdrop", "void"]:
+			"wax", "statue", "flame", "glow", "ember", "window_glow", "paper", "backdrop", "void", "occluder"]:
 		materials[m] = _material(m)
 
 
@@ -117,6 +119,8 @@ func flush(parent: Node3D) -> int:
 		mmi.material_override = materials[b.mat]
 		if NO_SHADOW.has(b.mat):
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		elif SHADOW_ONLY.has(b.mat):
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		if b.mat == "backdrop":
 			mmi.layers = BACKDROP_LAYER
 		parent.add_child(mmi)
@@ -279,6 +283,7 @@ func _material(kind: String) -> Material:
 	match kind:
 		"stone", "stone_dark", "floor", "backdrop":
 			m.shader = load("res://shaders/stone.gdshader")
+			m.set_shader_parameter("sun_dir", World.SUN_DIR.normalized())
 			if kind == "stone_dark":
 				m.set_shader_parameter("base_color", Color(0.30, 0.27, 0.25))
 			elif kind == "floor":
@@ -307,7 +312,7 @@ func _material(kind: String) -> Material:
 			m.set_shader_parameter("self_lit", p[3])
 		"cloth":
 			m.shader = load("res://shaders/cloth.gdshader")
-		"void":
+		"void", "occluder":
 			m.shader = load("res://shaders/void.gdshader")
 		"wax", "paper":
 			m.shader = load("res://shaders/wax.gdshader")

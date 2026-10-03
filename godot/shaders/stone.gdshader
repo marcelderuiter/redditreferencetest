@@ -11,10 +11,12 @@ uniform float wear = 0.4;
 // can't reach them, so darken with depth (fog lightens them again further down).
 uniform float under_top = -1.6;
 uniform float under_bottom = -8.0;
-uniform float under_min = 0.7;
+uniform float under_min = 0.55;
 // Fine grain and pitting (1 = full); distant masonry uses less so it
 // doesn't sparkle with sub-pixel noise.
 uniform float detail = 1.0;
+// Direction the sun travels (World.SUN_DIR): lit rims only where it reaches.
+uniform vec3 sun_dir = vec3(0.35, -0.92, 0.12);
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -49,13 +51,17 @@ void fragment() {
 	vec3 an = abs(normalize(lp / max(halfsize, vec3(0.001))));
 	float edge_d = (an.x > an.y && an.x > an.z) ? min(e.y, e.z) : ((an.y > an.z) ? min(e.x, e.z) : min(e.x, e.y));
 	float rim = 1.0 - smoothstep(0.0, 0.05, edge_d);
-	// Upward-facing rims of real blocks (not thin floor tiles) catch the
-	// light, and on side faces the joints sink into shadow, so each block
-	// reads as a lit top over a dark drop.
+	// Rims of real blocks (not thin floor tiles) catch the light where the
+	// sun reaches them: faces turned to it, above the floors (below them the
+	// rooms shade everything), so shadowed masonry gets no bright outlines.
+	// On side faces the joints sink into shadow, so each block reads as a
+	// lit top over a dark drop.
 	float block = smoothstep(0.06, 0.12, halfsize.y);
 	float top_face = smoothstep(0.6, 0.9, wnrm.y);
 	float side = 1.0 - smoothstep(0.3, 0.7, abs(wnrm.y));
-	col *= 1.0 + rim * (0.18 + 0.3 * top_face * block) * (0.5 + big);
+	float sunlit = clamp(dot(wnrm, -normalize(sun_dir)) * 2.0, 0.0, 1.0)
+		* (1.0 - smoothstep(under_top, under_bottom, wpos.y));
+	col *= 1.0 + rim * (0.06 + (0.12 + 0.3 * top_face * block) * sunlit) * (0.5 + big);
 	col *= 1.0 - 0.38 * (1.0 - smoothstep(0.0, 0.08, edge_d)) * side;
 	float up = clamp(wnrm.y, 0.0, 1.0);
 	col = mix(col, col * vec3(1.1, 1.05, 0.98), up * wear);

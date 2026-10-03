@@ -3,7 +3,7 @@ extends RefCounted
 ## Environment, lights and the abyss backdrop around the level.
 
 const AMBIENT := Color(0.5, 0.48, 0.5)
-const FOG := Color8(30, 26, 28)   # near-black haze (the grade cools it slightly)
+const FOG := Color8(22, 18, 18)   # near-black haze (the grade cools it slightly)
 # A faint cool light on the distant masonry only (cull-masked to the backdrop
 # layer): just enough for the nearest piers' faces to separate from the dark.
 const ABYSS_LIGHT := Color(0.7, 0.76, 0.95)
@@ -210,6 +210,11 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 		kit.put("box", "window_glow", face, Vector3(0.9, 2.0, 0.06))
 		kit.light(face + Vector3(0, 0, 2.0), Color(1.0, 0.55, 0.25), 5.0, 15.0)
 	kit.put("box", "backdrop", Vector3(c.x, Layout.ABYSS - 1.0, c.y), Vector3(400.0, 2.0, 400.0), 0.0, Color(0.5, 0.5, 0.6))
+	# The sun (sky key) never reaches below the floors: a shadow-only sheet
+	# just under the lowest slab (extended west, where the light comes from)
+	# leaves the shafts to the lanterns and the haze, so they fall off into
+	# darkness instead of showing sunlit block edges through the gaps.
+	kit.put("box", "occluder", Vector3(c.x - 12.0, -2.4, c.y), Vector3(bounds.size.x + 70.0, 0.4, bounds.size.y + 50.0))
 
 
 static func _tower(kit: Kit, p: Vector2, w: float, d: float, top: float) -> void:
