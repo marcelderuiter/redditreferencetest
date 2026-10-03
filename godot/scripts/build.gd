@@ -4,10 +4,10 @@ extends RefCounted
 ## walls with crenellations, corner towers, corbelled pillars that run down
 ## into the abyss, and the bridge, stair, walkway and girder for each link.
 
-const TILE := 0.6
+const FLAG := 0.3           # flagstone module (flags are 1-4 modules a side)
 const SLAB := 0.55          # floor slab under the tiles
-const TILE_H := 0.09
-const COURSE := 0.33
+const TILE_H := 0.12
+const COURSE := 0.5         # mean course height of the ashlar
 const STONE := Color(0.47, 0.42, 0.37)
 const STONE_WARM := Color(0.5, 0.43, 0.36)
 const DEEP_BLOCKS := -22.0  # below this, pillars are plain masonry hidden in fog
@@ -60,24 +60,25 @@ func _floor(r: Layout.Room) -> void:
 	var theme: String = r.opts.get("theme", "stone")
 	# Bedding under the floor (shows as dark mortar between tiles).
 	kit.put("box", "stone_dark", Vector3(inner.get_center().x, r.y - SLAB * 0.5 - TILE_H * 0.5, inner.get_center().y),
-		Vector3(inner.size.x, SLAB - TILE_H, inner.size.y), 0.0, Color(0.5, 0.48, 0.46))
+		Vector3(inner.size.x, SLAB - TILE_H, inner.size.y), 0.0, Color(0.32, 0.3, 0.29))
 	if theme == "wood" or theme == "iron":
 		_deck(r.rect.grow(-0.05), r.y, theme)
 		return
 	_tiles(inner, r.y)
 	for e in r.extra_floor:
 		var c := e.get_center()
-		kit.put("box", "stone_dark", Vector3(c.x, r.y - SLAB * 0.5 - TILE_H * 0.5, c.y), Vector3(e.size.x, SLAB - TILE_H, e.size.y), 0.0, Color(0.5, 0.48, 0.46))
+		kit.put("box", "stone_dark", Vector3(c.x, r.y - SLAB * 0.5 - TILE_H * 0.5, c.y), Vector3(e.size.x, SLAB - TILE_H, e.size.y), 0.0, Color(0.32, 0.3, 0.29))
 		_tiles(e, r.y)
 	_slab_edges(r)
 	_debris(r)
 
 
-## Irregular flagstones on a 0.5 m grid: whole, halved, quartered, a few
-## large ones and the odd broken gap.
+## Random-pattern flagging: rectangles of one to four modules a side packed
+## greedily over a fine grid, so large and small flags mix and the joints never
+## line up into a grid, with the odd broken flag.
 func _tiles(area: Rect2, top: float, mat := "floor") -> void:
-	var nx := maxi(1, roundi(area.size.x / TILE))
-	var nz := maxi(1, roundi(area.size.y / TILE))
+	var nx := maxi(1, roundi(area.size.x / FLAG))
+	var nz := maxi(1, roundi(area.size.y / FLAG))
 	var cw := area.size.x / nx
 	var cd := area.size.y / nz
 	var used := {}
@@ -85,38 +86,48 @@ func _tiles(area: Rect2, top: float, mat := "floor") -> void:
 		for ix in nx:
 			if used.has(Vector2i(ix, iz)):
 				continue
-			var r := kit.rng.randf()
-			var x0 := area.position.x + ix * cw
-			var z0 := area.position.y + iz * cd
-			if r < 0.07 and ix + 1 < nx and iz + 1 < nz and not used.has(Vector2i(ix + 1, iz)) \
-					and not used.has(Vector2i(ix, iz + 1)) and not used.has(Vector2i(ix + 1, iz + 1)):
-				for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
-					used[Vector2i(ix, iz) + d] = true
-				_tile(Rect2(x0, z0, cw * 2, cd * 2), top, mat)
-			elif r < 0.27:
-				if kit.rng.randf() < 0.5:
-					_tile(Rect2(x0, z0, cw * 0.5, cd), top, mat)
-					_tile(Rect2(x0 + cw * 0.5, z0, cw * 0.5, cd), top, mat)
-				else:
-					_tile(Rect2(x0, z0, cw, cd * 0.5), top, mat)
-					_tile(Rect2(x0, z0 + cd * 0.5, cw, cd * 0.5), top, mat)
-			elif r < 0.37:
-				for q in [Vector2(0, 0), Vector2(0.5, 0), Vector2(0, 0.5), Vector2(0.5, 0.5)]:
-					_tile(Rect2(x0 + q.x * cw, z0 + q.y * cd, cw * 0.5, cd * 0.5), top, mat)
-			elif r < 0.395:
-				_broken(Rect2(x0, z0, cw, cd), top)
+			var w := _flag_span(nx - ix)
+			var d := _flag_span(nz - iz)
+			# Shrink to fit around flags already laid.
+			for k in range(1, w):
+				if used.has(Vector2i(ix + k, iz)):
+					w = k
+					break
+			var free := false
+			while not free:
+				free = true
+				for jz in d:
+					for jx in w:
+						if used.has(Vector2i(ix + jx, iz + jz)):
+							free = false
+				if not free:
+					d -= 1
+			for jz in d:
+				for jx in w:
+					used[Vector2i(ix + jx, iz + jz)] = true
+			var rect := Rect2(area.position.x + ix * cw, area.position.y + iz * cd, cw * w, cd * d)
+			if kit.rng.randf() < 0.025:
+				_broken(rect, top)
 			else:
-				_tile(Rect2(x0, z0, cw, cd), top, mat)
+				_tile(rect, top, mat)
+
+
+## Flagstone side in modules: mostly two or three, some four, the odd one.
+func _flag_span(room: int) -> int:
+	var r := kit.rng.randf()
+	var n := 1 if r < 0.12 else (2 if r < 0.5 else (3 if r < 0.85 else 4))
+	return mini(n, room)
 
 
 func _tile(rect: Rect2, top: float, mat: String) -> void:
-	var gap := 0.035
-	var h := TILE_H + kit.jitter(0.015)
+	var gap := 0.05
+	var h := TILE_H + kit.jitter(0.018)
 	var c := rect.get_center()
-	var tilt := Basis(Vector3.RIGHT, deg_to_rad(kit.jitter(1.6))) * Basis(Vector3.FORWARD, deg_to_rad(kit.jitter(1.6)))
-	var basis := Basis(Vector3.UP, deg_to_rad(kit.jitter(2.0))) * tilt
-	kit.piece("slab", mat, Vector3(c.x, top - h * 0.5 + kit.jitter(0.012), c.y),
-		Vector3(rect.size.x - gap - kit.rng.randf_range(0.0, 0.03), h, rect.size.y - gap - kit.rng.randf_range(0.0, 0.03)), basis, kit.tint(STONE, 0.16))
+	var tilt := Basis(Vector3.RIGHT, deg_to_rad(kit.jitter(1.8))) * Basis(Vector3.FORWARD, deg_to_rad(kit.jitter(1.8)))
+	var basis := Basis(Vector3.UP, deg_to_rad(kit.jitter(0.8))) * tilt
+	var col := kit.tint(STONE * (0.72 if kit.rng.randf() < 0.12 else 1.0), 0.26, 0.04)
+	kit.piece("slab", mat, Vector3(c.x, top - h * 0.5 + kit.jitter(0.018), c.y),
+		Vector3(rect.size.x - gap - kit.rng.randf_range(0.0, 0.03), h, rect.size.y - gap - kit.rng.randf_range(0.0, 0.03)), basis, col)
 
 
 func _broken(rect: Rect2, top: float) -> void:
@@ -243,10 +254,13 @@ func _side_walls(r: Layout.Room, side: String) -> void:
 		if side in r.opts.get("balustrade", []):
 			_balustrade(side, rect, base, r.y, r.y + height)
 			continue
-		_course_wall(side, rect, base, r.y + height, "stone")
-		_crenellate(side, rect, r.y + height)
+		var notch := _notch(r, side, rect, height)
+		_course_wall(side, rect, base, r.y + height, "stone", Vector2(0.55, 1.3), COURSE, notch)
+		_crenellate(side, rect, r.y + height, notch)
+		if notch != Vector3.ZERO:
+			_rubble(r, side, band, notch)
 		if height >= 1.0:
-			_pilasters(side, rect, base, r.y + height)
+			_pilasters(side, rect, base, r.y + height, notch)
 	for o in doors:
 		_doorway(r, side, band, o, height)
 	for f in r.opts.get("features", []):
@@ -254,45 +268,155 @@ func _side_walls(r: Layout.Room, side: String) -> void:
 			_feature(r, side, band, f, height)
 
 
-## Coursed masonry filling a plan rectangle from y0 to y1, with a dark mortar
-## core so joints read as gaps.
-func _course_wall(side: String, rect: Rect2, y0: float, y1: float, mat: String, block_len := Vector2(0.45, 0.95), course := COURSE) -> void:
+## A breach in some lower walls without features: the top broken down in
+## steps over a metre or two (centre, half width, drop), as on the
+## reference's ruined parapets. Vector3.ZERO for an intact wall.
+func _notch(r: Layout.Room, side: String, rect: Rect2, height: float) -> Vector3:
+	var along_x := side == "n" or side == "s"
+	var length := rect.size.x if along_x else rect.size.y
+	if length < 2.6 or height < 0.6 or height > 2.0 or kit.rng.randf() > 0.4:
+		return Vector3.ZERO
+	for f in r.opts.get("features", []):
+		if f.side == side:
+			return Vector3.ZERO
+	var start := rect.position.x if along_x else rect.position.y
+	var hw := kit.rng.randf_range(0.55, minf(1.2, length * 0.3))
+	var at := kit.rng.randf_range(start + hw + 0.4, start + length - hw - 0.4)
+	return Vector3(at, hw, height * kit.rng.randf_range(0.5, 0.8))
+
+
+## Fallen stones at the foot of a breach, inside the room.
+func _rubble(r: Layout.Room, side: String, band: Rect2, notch: Vector3) -> void:
+	var along_x := side == "n" or side == "s"
+	var into: float = 1.0 if side == "n" or side == "w" else -1.0
+	var face: float
+	match side:
+		"n":
+			face = band.end.y
+		"s":
+			face = band.position.y
+		"w":
+			face = band.end.x
+		_:
+			face = band.position.x
+	for i in 4 + kit.rng.randi() % 4:
+		var at := notch.x + kit.jitter(notch.y * 0.9)
+		var off := face + into * kit.rng.randf_range(0.08, 0.7)
+		var sz := kit.rng.randf_range(0.14, 0.34)
+		var p := Vector3(at, 0, off) if along_x else Vector3(off, 0, at)
+		kit.piece("block", "stone", p + Vector3(0, r.y + sz * 0.28, 0), Vector3(sz * kit.rng.randf_range(0.9, 1.6), sz * 0.65, sz),
+			Basis.from_euler(Vector3(kit.jitter(0.35), kit.rng.randf() * TAU, kit.jitter(0.35))), kit.tint(STONE, 0.24, 0.05))
+
+
+## Coursed ashlar filling a plan rectangle from y0 to y1, over a near-black
+## core so the joints read as deep gaps. Course heights vary up the wall and
+## block lengths along it; some blocks run through two courses, some stand
+## proud or sit back, and a few are settled, shrunken or missing. A notch
+## (centre, half width, drop along the wall) breaks the top down in steps.
+func _course_wall(side: String, rect: Rect2, y0: float, y1: float, mat: String, block_len := Vector2(0.55, 1.3), course := COURSE, notch := Vector3.ZERO) -> void:
 	var along_x := side == "n" or side == "s"
 	var length := rect.size.x if along_x else rect.size.y
 	var depth := rect.size.y if along_x else rect.size.x
 	if length < 0.05 or y1 - y0 < 0.05:
 		return
 	var c := rect.get_center()
-	kit.put("box", "void", Vector3(c.x, (y0 + y1) * 0.5, c.y),
-		Vector3(rect.size.x - (0.0 if along_x else 0.1), y1 - y0 - 0.02, rect.size.y - (0.1 if along_x else 0.0)))
-	var start := rect.position.x if along_x else rect.position.y
+	var core := maxf(depth - 0.14, depth * 0.5)
+	var lo := rect.position.x if along_x else rect.position.y
+	var hi := lo + length
+	if notch == Vector3.ZERO:
+		_void_core(along_x, c, core, lo, hi, y0, y1 - 0.02)
+	var rows := _courses(y1 - y0, course)
 	var y := y0
-	var row := 0
-	while y < y1 - 0.04:
-		var h := minf(course + kit.jitter(0.05), y1 - y)
-		if y1 - (y + h) < 0.12:
-			h = y1 - y
-		var s := start - kit.rng.randf_range(0.1, block_len.x)
-		while s < start + length - 0.02:
-			var bl := kit.rng.randf_range(block_len.x, block_len.y)
-			var a := maxf(s, start)
-			var b := minf(s + bl, start + length)
-			if b - a > 0.08 and kit.rng.randf() > 0.015:
-				var mid := (a + b) * 0.5
-				var out := kit.jitter(0.03)
-				var bh := h - 0.04
-				var shrink := 1.0
-				if kit.rng.randf() < 0.07:
-					shrink = kit.rng.randf_range(0.7, 0.88)
-				var pos := Vector3(mid, y + h * 0.5 - (1.0 - shrink) * bh * 0.3, c.y + out) if along_x else Vector3(c.x + out, y + h * 0.5 - (1.0 - shrink) * bh * 0.3, mid)
-				var size := Vector3((b - a - 0.04) * shrink, bh * shrink, depth + kit.jitter(0.04)) if along_x \
-					else Vector3(depth + kit.jitter(0.04), bh * shrink, (b - a - 0.04) * shrink)
-				var wob := 0.02 + (1.0 - shrink) * 0.3
-				var basis := Basis.from_euler(Vector3(kit.jitter(wob), kit.jitter(wob * 1.5), kit.jitter(wob)))
-				kit.piece("block", mat, pos, size, basis, kit.tint(STONE, 0.24, 0.05))
-			s += bl
+	var reserved := []
+	var carried := []
+	for i in rows.size():
+		var h: float = rows[i]
+		var next_reserved := []
+		var skipped := carried
+		carried = []
+		for seg in _subtract(Vector2(lo, hi), reserved):
+			var cuts := _block_cuts(seg, block_len, seg.x <= lo + 0.001)
+			for k in cuts.size() - 1:
+				var a := cuts[k]
+				var b := cuts[k + 1]
+				var bh := h
+				var double := i + 1 < rows.size() and b - a < block_len.y * 0.8 and kit.rng.randf() < 0.1
+				if double:
+					bh += rows[i + 1]
+					next_reserved.append(Vector2(a, b))
+				if notch != Vector3.ZERO and y + bh > y1 - _notch_drop(notch, (a + b) * 0.5) + 0.05:
+					skipped.append(Vector2(a, b))
+					if double:
+						carried.append(Vector2(a, b))
+					continue
+				_ashlar(along_x, c, depth, a, b, y, bh, mat)
+		if notch != Vector3.ZERO:
+			for seg in _subtract(Vector2(lo, hi), skipped):
+				_void_core(along_x, c, core, seg.x, seg.y, y, y + h)
+		reserved = next_reserved
 		y += h
-		row += 1
+
+
+## Depth of a wall-top notch at x along the wall: full in the middle,
+## stepping out to nothing at its ends.
+func _notch_drop(notch: Vector3, x: float) -> float:
+	if notch == Vector3.ZERO:
+		return 0.0
+	return notch.z * clampf((1.0 - absf(x - notch.x) / notch.y) * 1.6, 0.0, 1.0)
+
+
+## The near-black core behind a run of blocks, from a to b along the wall.
+func _void_core(along_x: bool, c: Vector2, core: float, a: float, b: float, y0: float, y1: float) -> void:
+	var mid := (a + b) * 0.5
+	kit.put("box", "void", Vector3(mid if along_x else c.x, (y0 + y1) * 0.5, c.y if along_x else mid),
+		Vector3(b - a if along_x else core, y1 - y0, core if along_x else b - a))
+
+
+## Joint positions along a run of masonry: random block lengths, the first
+## one staggered at a wall end, and no sliver left at the far end.
+func _block_cuts(seg: Vector2, block_len: Vector2, stagger: bool) -> Array[float]:
+	var cuts: Array[float] = [seg.x]
+	var s := seg.x
+	if stagger:
+		s -= kit.rng.randf_range(0.0, block_len.x)
+	while true:
+		s += kit.rng.randf_range(block_len.x, block_len.y)
+		if s >= seg.y - 0.18:
+			break
+		if s > cuts[-1] + 0.18:
+			cuts.append(s)
+	cuts.append(seg.y)
+	return cuts
+
+
+## One wall block between a and b along the wall, y to y + h, through the
+## wall's depth: proud, set back, settled or (rarely) missing.
+func _ashlar(along_x: bool, c: Vector2, depth: float, a: float, b: float, y: float, h: float, mat: String) -> void:
+	if kit.rng.randf() < 0.012:
+		return
+	var gap := 0.045
+	var thick := depth + kit.jitter(0.03)
+	var out := kit.jitter(0.02)
+	var r := kit.rng.randf()
+	if r < 0.12:
+		thick += kit.rng.randf_range(0.05, 0.12)
+		out = kit.jitter(0.035)
+	elif r < 0.22:
+		thick -= kit.rng.randf_range(0.03, 0.07)
+		out = kit.jitter(0.01)
+	var shrink := 1.0
+	var wob := 0.012
+	if kit.rng.randf() < 0.06:
+		shrink = kit.rng.randf_range(0.78, 0.92)
+		wob = 0.045
+	var bl := (b - a - gap) * shrink
+	var bh := (h - gap) * shrink
+	var mid := (a + b) * 0.5
+	var cy := y + h * 0.5 - (h - gap - bh) * 0.4
+	var pos := Vector3(mid, cy, c.y + out) if along_x else Vector3(c.x + out, cy, mid)
+	var size := Vector3(bl, bh, thick) if along_x else Vector3(thick, bh, bl)
+	var basis := Basis.from_euler(Vector3(kit.jitter(wob), kit.jitter(wob), kit.jitter(wob)))
+	kit.piece("block", mat, pos, size, basis, kit.tint(STONE, 0.26, 0.05))
 
 
 ## Stone balustrade: plinth, turned balusters, heavy handrail.
@@ -319,7 +443,7 @@ func _balustrade(side: String, rect: Rect2, base: float, floor_y: float, top: fl
 
 
 ## Piers standing proud of both wall faces every couple of metres.
-func _pilasters(side: String, rect: Rect2, y0: float, y1: float) -> void:
+func _pilasters(side: String, rect: Rect2, y0: float, y1: float, notch := Vector3.ZERO) -> void:
 	var along_x := side == "n" or side == "s"
 	var length := rect.size.x if along_x else rect.size.y
 	var depth := rect.size.y if along_x else rect.size.x
@@ -330,6 +454,8 @@ func _pilasters(side: String, rect: Rect2, y0: float, y1: float) -> void:
 	var c := rect.get_center()
 	for i in range(1, n):
 		var at := start + length * i / n + kit.jitter(0.1)
+		if notch != Vector3.ZERO and absf(at - notch.x) < notch.y + 0.3:
+			continue
 		var pos := Vector3(at, (y0 + y1 + 0.2) * 0.5, c.y) if along_x else Vector3(c.x, (y0 + y1 + 0.2) * 0.5, at)
 		var size := Vector3(0.42, y1 - y0 + 0.2, depth + 0.24) if along_x else Vector3(depth + 0.24, y1 - y0 + 0.2, 0.42)
 		_column(pos, size)
@@ -341,37 +467,48 @@ func _pilasters(side: String, rect: Rect2, y0: float, y1: float) -> void:
 				kit.light(cap + Vector3(0, 0.5, 0), Props.CANDLE_LIGHT, 1.4, 3.2)
 
 
-## Merlons along a wall top, with the odd one fallen.
-func _crenellate(side: String, rect: Rect2, top: float) -> void:
+## Capping course and merlons along a wall top, at an uneven rhythm: some
+## merlons fallen, some broken down, some with a loose stone left on top.
+func _crenellate(side: String, rect: Rect2, top: float, notch := Vector3.ZERO) -> void:
 	var along_x := side == "n" or side == "s"
 	var length := rect.size.x if along_x else rect.size.y
 	var depth := rect.size.y if along_x else rect.size.x
 	var start := rect.position.x if along_x else rect.position.y
 	var c := rect.get_center()
-	# Capping course, slightly proud of the wall.
-	var n := maxi(1, int(length / 0.6))
-	var w := length / n
-	for i in n:
-		var mid := start + (i + 0.5) * w + kit.jitter(0.03)
-		var ch := 0.16 + kit.jitter(0.03)
-		var pos := Vector3(mid, top + ch * 0.5, c.y + kit.jitter(0.03)) if along_x else Vector3(c.x + kit.jitter(0.03), top + ch * 0.5, mid)
-		var size := Vector3(w - 0.04, ch, depth + 0.1) if along_x else Vector3(depth + 0.1, ch, w - 0.04)
-		kit.piece("block", "stone", pos, size, Basis.from_euler(Vector3(kit.jitter(0.03), kit.jitter(0.06), kit.jitter(0.03))), kit.tint(STONE, 0.22, 0.05))
-	var m := maxi(1, int(length / 0.85))
-	var pitch := length / m
-	for i in m:
-		if kit.rng.randf() < 0.15:
-			continue
-		var mid := start + (i + 0.5) * pitch + kit.jitter(0.06)
-		var mh := kit.rng.randf_range(0.26, 0.42)
-		var mw := minf(kit.rng.randf_range(0.38, 0.5), pitch * 0.6)
-		var pos := Vector3(mid, top + 0.16 + mh * 0.5, c.y) if along_x else Vector3(c.x, top + 0.16 + mh * 0.5, mid)
-		var size := Vector3(mw, mh, depth * 0.95) if along_x else Vector3(depth * 0.95, mh, mw)
-		kit.piece("block", "stone", pos, size, Basis.from_euler(Vector3(kit.jitter(0.05), kit.jitter(0.08), kit.jitter(0.05))), kit.tint(STONE, 0.22, 0.05))
-		if kit.rng.randf() < 0.18:
-			var sh := kit.rng.randf_range(0.18, 0.28)
-			var p2 := pos + Vector3(kit.jitter(0.05), mh * 0.5 + sh * 0.5 + 0.01, kit.jitter(0.03))
-			kit.piece("block", "stone", p2, size * Vector3(0.85, sh / mh, 0.85), Basis(Vector3.UP, kit.jitter(0.15)), kit.tint(STONE, 0.22, 0.05))
+	# Capping course: long stones of uneven thickness, slightly proud of the wall.
+	var gap := Vector2(notch.x - notch.y, notch.x + notch.y)
+	for seg in _subtract(Vector2(start, start + length), [gap] if notch != Vector3.ZERO else []):
+		var cuts := _block_cuts(seg, Vector2(0.5, 1.1), true)
+		for k in cuts.size() - 1:
+			var mid := (cuts[k] + cuts[k + 1]) * 0.5
+			var ch := kit.rng.randf_range(0.15, 0.21)
+			var out := kit.jitter(0.03)
+			var pos := Vector3(mid, top + ch * 0.5, c.y + out) if along_x else Vector3(c.x + out, top + ch * 0.5, mid)
+			var w := cuts[k + 1] - cuts[k] - 0.05
+			var d := depth + 0.1 + kit.jitter(0.03)
+			var size := Vector3(w, ch, d) if along_x else Vector3(d, ch, w)
+			kit.piece("block", "stone", pos, size, Basis.from_euler(Vector3(kit.jitter(0.025), kit.jitter(0.04), kit.jitter(0.025))), kit.tint(STONE, 0.24, 0.05))
+	var s := start + kit.rng.randf_range(0.0, 0.35)
+	while s < start + length - 0.3:
+		var mw := minf(kit.rng.randf_range(0.42, 0.72), start + length - s)
+		var r := kit.rng.randf()
+		if notch != Vector3.ZERO and s < gap.y and s + mw > gap.x:
+			r = 0.0
+		if r >= 0.12:
+			var mh := kit.rng.randf_range(0.3, 0.48)
+			if r < 0.26:
+				mh *= kit.rng.randf_range(0.45, 0.7)
+			var mid := s + mw * 0.5
+			var md := depth * kit.rng.randf_range(0.85, 1.0)
+			var pos := Vector3(mid, top + 0.13 + mh * 0.5, c.y) if along_x else Vector3(c.x, top + 0.13 + mh * 0.5, mid)
+			var size := Vector3(mw, mh, md) if along_x else Vector3(md, mh, mw)
+			var wob := 0.05 if r < 0.26 else 0.025
+			kit.piece("block", "stone", pos, size, Basis.from_euler(Vector3(kit.jitter(wob), kit.jitter(0.06), kit.jitter(wob))), kit.tint(STONE, 0.24, 0.05))
+			if r >= 0.26 and kit.rng.randf() < 0.15:
+				var sh := kit.rng.randf_range(0.16, 0.26)
+				var p2 := pos + Vector3(kit.jitter(0.05), mh * 0.5 + sh * 0.5 + 0.01, kit.jitter(0.03))
+				kit.piece("block", "stone", p2, size * Vector3(0.8, sh / mh, 0.8), Basis(Vector3.UP, kit.jitter(0.15)), kit.tint(STONE, 0.24, 0.05))
+		s += mw + kit.rng.randf_range(0.26, 0.5)
 
 
 ## Jambs either side of an opening, and a lintel with wall above in tall walls.
@@ -404,9 +541,11 @@ func _column(center: Vector3, size: Vector3) -> void:
 	var y := center.y - size.y * 0.5
 	var top := center.y + size.y * 0.5
 	while y < top - 0.03:
-		var h := minf(COURSE + kit.jitter(0.04), top - y)
-		kit.piece("block", "stone", Vector3(center.x, y + h * 0.5, center.z), Vector3(size.x + kit.jitter(0.02), h - 0.02, size.z + kit.jitter(0.02)),
-			Basis(Vector3.UP, kit.jitter(0.03)), kit.tint(STONE_WARM, 0.14))
+		var h := minf(COURSE * kit.rng.randf_range(0.7, 1.15), top - y)
+		if top - (y + h) < 0.15:
+			h = top - y
+		kit.piece("block", "stone", Vector3(center.x, y + h * 0.5, center.z), Vector3(size.x + kit.jitter(0.03), h - 0.04, size.z + kit.jitter(0.03)),
+			Basis(Vector3.UP, kit.jitter(0.03)), kit.tint(STONE_WARM, 0.18))
 		y += h
 
 
@@ -545,7 +684,7 @@ func _tower(r: Layout.Room, corner: String, height: float) -> void:
 	_block_box(foot, base, top)
 	# Corbelled crown and corner merlons.
 	var crown := foot.grow(0.09)
-	_block_box(crown, top, top + 0.3, Vector2(0.3, 0.5))
+	_block_box(crown, top, top + 0.3, Vector2(0.45, 0.8))
 	for q in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
 		var p: Vector2 = crown.position + (crown.size - Vector2(0.4, 0.4)) * q + Vector2(0.2, 0.2)
 		kit.put("block", "stone", Vector3(p.x, top + 0.3 + 0.2, p.y), Vector3(0.38, 0.4, 0.38), kit.jitter(5.0), kit.tint(STONE, 0.15))
@@ -561,7 +700,7 @@ func _tower(r: Layout.Room, corner: String, height: float) -> void:
 
 
 ## Hollow-looking solid of blocks on all four faces between y0 and y1.
-func _block_box(foot: Rect2, y0: float, y1: float, block_len := Vector2(0.35, 0.6), course := COURSE) -> void:
+func _block_box(foot: Rect2, y0: float, y1: float, block_len := Vector2(0.5, 0.95), course := COURSE) -> void:
 	var t := 0.3
 	_course_wall("n", Rect2(foot.position.x, foot.position.y, foot.size.x, t), y0, y1, "stone", block_len, course)
 	_course_wall("s", Rect2(foot.position.x, foot.end.y - t, foot.size.x, t), y0, y1, "stone", block_len, course)
@@ -627,7 +766,7 @@ func _pillar(r: Layout.Room) -> void:
 	var foot := r.rect
 	for step in 3:
 		var f := foot.grow(-0.22 * (step + 1))
-		_block_box(f, top - 0.32, top, Vector2(0.45, 0.85), 0.32)
+		_block_box(f, top - 0.32, top, Vector2(0.7, 1.3), 0.32)
 		top -= 0.32
 	var area := foot.grow(-0.8)
 	var nx := maxi(1, roundi(area.size.x / 4.8))
@@ -655,8 +794,8 @@ func _pillar(r: Layout.Room) -> void:
 
 func _pillar_core(core: Rect2, top: float, front: bool) -> void:
 	# Near courses: dressed blocks; deeper: bigger rougher ones; then plain.
-	_block_box(core, top - 6.0, top, Vector2(0.6, 1.3), 0.45)
-	_block_box(core, DEEP_BLOCKS, top - 6.0, Vector2(0.9, 1.6), 0.6)
+	_block_box(core, top - 6.0, top, Vector2(1.0, 1.9), 0.68)
+	_block_box(core, DEEP_BLOCKS, top - 6.0, Vector2(1.1, 2.0), 0.7)
 	var c := core.get_center()
 	kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + DEEP_BLOCKS) * 0.5, c.y), Vector3(core.size.x, DEEP_BLOCKS - Layout.ABYSS, core.size.y))
 	if not front:
@@ -713,19 +852,44 @@ func _round_pillar(r: Layout.Room) -> void:
 func _ring(c: Vector2, rad: float, y0: float, y1: float, depth: float, block_len: float, course := COURSE) -> void:
 	kit.put("cyl", "stone_dark", Vector3(c.x, (y0 + y1) * 0.5, c.y), Vector3((rad - 0.05) * 2.0, y1 - y0, (rad - 0.05) * 2.0))
 	var y := y0
-	var row := 0
-	while y < y1 - 0.03:
-		var h := minf(course + kit.jitter(0.03), y1 - y)
-		var n := maxi(6, int(TAU * rad / block_len))
-		var off := (0.5 if row % 2 else 0.0) + kit.jitter(0.1)
-		for i in n:
-			var a := TAU * (i + off) / n
-			var p := c + Vector2(cos(a), sin(a)) * (rad - depth * 0.5)
-			var w := TAU * rad / n
-			kit.piece("block", "stone", Vector3(p.x, y + h * 0.5, p.y), Vector3(depth + kit.jitter(0.02), h - 0.02, w - 0.03),
-				Basis(Vector3.UP, -a), kit.tint(STONE, 0.17))
+	for h in _courses(y1 - y0, course):
+		_ring_course(c, rad, depth, y, h, Vector2(block_len * 0.75, block_len * 1.35))
 		y += h
-		row += 1
+
+
+## One course of blocks round a circle: random arc lengths from a random
+## start, stopping short of the gaps (angle ranges left open).
+func _ring_course(c: Vector2, rad: float, depth: float, y: float, h: float, block_len: Vector2, gaps := []) -> void:
+	var a0 := kit.rng.randf() * TAU
+	var free := [Vector2(0.0, TAU * rad)]
+	if not gaps.is_empty():
+		a0 = gaps[0].y
+		var holes := []
+		for g in gaps:
+			var g0 := wrapf(g.x - a0, 0.0, TAU) * rad
+			holes.append(Vector2(g0, g0 + (g.y - g.x) * rad))
+		free = _subtract(free[0], holes)
+	for seg in free:
+		var cuts := _block_cuts(seg, block_len, false)
+		for k in cuts.size() - 1:
+			var a := a0 + (cuts[k] + cuts[k + 1]) * 0.5 / rad
+			var p := c + Vector2(cos(a), sin(a)) * (rad - depth * 0.5)
+			var tilt := Basis.from_euler(Vector3(kit.jitter(0.012), 0.0, kit.jitter(0.012)))
+			kit.piece("block", "stone", Vector3(p.x, y + h * 0.5, p.y), Vector3(depth + kit.jitter(0.04), h - 0.045, cuts[k + 1] - cuts[k] - 0.045),
+				Basis(Vector3.UP, -a) * tilt, kit.tint(STONE, 0.24, 0.05))
+
+
+## Course heights filling `height`: uneven, none much thinner than half a course.
+func _courses(height: float, course: float) -> Array[float]:
+	var rows: Array[float] = []
+	var left := height
+	while left > 0.04:
+		var h := course * kit.rng.randf_range(0.72, 1.28)
+		if left - h < course * 0.5:
+			h = left if left < course * 1.6 else left * 0.5
+		rows.append(h)
+		left -= h
+	return rows
 
 
 ## Wooden posts with cross bracing (the low dock).
@@ -753,17 +917,19 @@ func _round_floor(r: Layout.Room) -> void:
 	kit.put("cyl", "stone_dark", Vector3(c.x, r.y - SLAB * 0.5 - TILE_H * 0.5, c.y), Vector3(rad * 2.0, SLAB - TILE_H, rad * 2.0))
 	kit.put("cyl", "floor", Vector3(c.x, r.y - TILE_H * 0.5, c.y), Vector3(0.9, TILE_H, 0.9), 0.0, kit.tint(STONE, 0.1))
 	var ring_r := 0.45
-	while ring_r < rad:
-		var w := minf(0.5, rad - ring_r)
+	while ring_r < rad - 0.05:
+		var w := kit.rng.randf_range(0.5, 0.75)
+		if rad - (ring_r + w) < 0.35:
+			w = rad - ring_r
 		var mid := ring_r + w * 0.5
-		var n := maxi(6, int(TAU * mid / 0.5))
-		var off := kit.rng.randf()
-		for i in n:
-			var a := TAU * (i + off) / n
+		var a0 := kit.rng.randf() * TAU
+		var cuts := _block_cuts(Vector2(0.0, TAU * mid), Vector2(0.55, 1.05), false)
+		for k in cuts.size() - 1:
+			var a := a0 + (cuts[k] + cuts[k + 1]) * 0.5 / mid
 			var p := c + Vector2(cos(a), sin(a)) * mid
-			var arc := TAU * mid / n
-			kit.piece("slab", "floor", Vector3(p.x, r.y - TILE_H * 0.5 + kit.jitter(0.01), p.y),
-				Vector3(w - 0.035, TILE_H + kit.jitter(0.012), arc - 0.04), Basis(Vector3.UP, -a) * Basis(Vector3.RIGHT, kit.jitter(0.02)), kit.tint(STONE, 0.16))
+			var h := TILE_H + kit.jitter(0.015)
+			kit.piece("slab", "floor", Vector3(p.x, r.y - h * 0.5 + kit.jitter(0.012), p.y),
+				Vector3(w - 0.05, h, cuts[k + 1] - cuts[k] - 0.05), Basis(Vector3.UP, -a) * Basis(Vector3.RIGHT, kit.jitter(0.02)), kit.tint(STONE, 0.18))
 		ring_r += w
 
 
@@ -780,20 +946,9 @@ func _round_wall(r: Layout.Room) -> void:
 		var half := asin(clampf((o.hi - o.lo) * 0.5 / (rad - r.wall_t * 0.5), 0.0, 1.0)) + 0.04
 		gaps.append(Vector2(dir.angle() - half, dir.angle() + half))
 	var y := base
-	var row := 0
-	while y < r.y + height - 0.03:
-		var h := minf(COURSE + kit.jitter(0.03), r.y + height - y)
-		var n := int(TAU * rad / 0.5)
-		var off := 0.5 if row % 2 else 0.0
-		for i in n:
-			var a := TAU * (i + off) / n
-			if _in_gaps(a, gaps):
-				continue
-			var p := c + Vector2(cos(a), sin(a)) * (rad - r.wall_t * 0.5)
-			kit.piece("block", "stone", Vector3(p.x, y + h * 0.5, p.y), Vector3(r.wall_t + kit.jitter(0.02), h - 0.02, TAU * rad / n - 0.03),
-				Basis(Vector3.UP, -a), kit.tint(STONE, 0.17))
+	for h in _courses(r.y + height - base, COURSE):
+		_ring_course(c, rad, r.wall_t, y, h, Vector2(0.6, 1.1), gaps)
 		y += h
-		row += 1
 	# Brass-capped posts around the rim, as on the reference's dais.
 	var posts := 16
 	for i in posts:
@@ -1082,7 +1237,7 @@ func _stairs(l: Layout.Link) -> void:
 	var foot := Rect2(lo, l.center - half - 0.3, hi - lo, l.width + 0.6) if l.axis == 0 \
 		else Rect2(l.center - half - 0.3, lo, l.width + 0.6, hi - lo)
 	if foot.size.x > 0.6 and foot.size.y > 0.6:
-		_block_box(foot.grow(-0.1), low - SLAB - 6.0, low - SLAB, Vector2(0.45, 0.9), 0.32)
+		_block_box(foot.grow(-0.1), low - SLAB - 6.0, low - SLAB, Vector2(0.7, 1.3), 0.5)
 		var c := foot.get_center()
 		kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + low - SLAB - 6.0) * 0.5, c.y), Vector3(foot.size.x - 0.3, low - SLAB - 6.0 - Layout.ABYSS, foot.size.y - 0.3))
 	if high - low > 0.0:

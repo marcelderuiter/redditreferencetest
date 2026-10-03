@@ -17,6 +17,11 @@ uniform float under_min = 0.55;
 uniform float detail = 1.0;
 // Direction the sun travels (World.SUN_DIR): lit rims only where it reaches.
 uniform vec3 sun_dir = vec3(0.35, -0.92, 0.12);
+// Metric chamfer (m) for bevelled boxes, rebuilt here so it keeps its size on
+// any block (0 = take the mesh as it is). Each corner gets its own amount:
+// most are worn, some knocked off deep, a few left sharp.
+uniform float chamfer = 0.0;
+uniform float chip = 1.0;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -25,6 +30,19 @@ varying vec3 lp;
 varying vec3 halfsize;
 
 void vertex() {
+	if (chamfer > 0.0) {
+		vec3 sc = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
+		vec3 s = sign(VERTEX);
+		vec3 inset = step(abs(VERTEX), vec3(0.475));
+		float h1 = hash13(s * 5.31 + INSTANCE_CUSTOM.xyz * 97.0);
+		float h2 = hash13(s * 3.17 + INSTANCE_CUSTOM.zxy * 61.0 + 4.0);
+		float c = chamfer * (mix(1.0, mix(0.4, 1.2, h1) + step(0.82, h2) * 1.2, chip));
+		c = min(c, 0.42 * min(sc.x, min(sc.y, sc.z)));
+		VERTEX = s * (0.5 - inset * c / sc);
+		// The multimesh normal matrix is the instance basis (scale included):
+		// pre-divide so the bevel normals come out at their metric angles.
+		NORMAL = NORMAL / sc;
+	}
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	wnrm = normalize(mat3(MODEL_MATRIX) * NORMAL);
 	inst = INSTANCE_CUSTOM;
@@ -37,26 +55,27 @@ void fragment() {
 	float fine = mix(0.5, vnoise(p * 8.0), detail);
 	float grain = mix(0.5, vnoise(p * 27.0), detail);
 	vec3 col = base_color * COLOR.rgb;
-	col *= 0.55 + 0.9 * big;
-	col *= 0.72 + 0.56 * grain;
+	col *= 0.7 + 0.6 * big;
+	col *= 0.8 + 0.4 * grain;
 	// Hairline cracks.
 	float crack = smoothstep(0.035, 0.0, abs(vnoise(p * 3.1) - 0.5)) * smoothstep(0.45, 0.7, vnoise(p * 1.3 + 7.0));
 	col *= 1.0 - 0.6 * crack;
 	float stain = smoothstep(0.55, 0.85, fbm3(p * 0.5 + 3.0));
 	col = mix(col, col * vec3(0.55, 0.5, 0.46), stain * 0.65);
 	float pit = smoothstep(0.30, 0.16, fine);
-	col *= 1.0 - 0.5 * pit;
+	col *= 1.0 - 0.3 * pit;
 	// Distance to the block's nearest edge on this face: worn, lighter rims.
 	vec3 e = halfsize - abs(lp);
 	vec3 an = abs(normalize(lp / max(halfsize, vec3(0.001))));
 	float edge_d = (an.x > an.y && an.x > an.z) ? min(e.y, e.z) : ((an.y > an.z) ? min(e.x, e.z) : min(e.x, e.y));
 	float rim = 1.0 - smoothstep(0.0, 0.05, edge_d);
-	// Rims of real blocks (not thin floor tiles) catch the light where the
-	// sun reaches them: faces turned to it, above the floors (below them the
-	// rooms shade everything), so shadowed masonry gets no bright outlines.
+	// Rims catch the light where the sun reaches them (worn flagstone edges a
+	// little less than block arrises): faces turned to it, above the floors
+	// (below them the rooms shade everything), so shadowed masonry gets no
+	// bright outlines.
 	// On side faces the joints sink into shadow, so each block reads as a
 	// lit top over a dark drop.
-	float block = smoothstep(0.06, 0.12, halfsize.y);
+	float block = mix(0.6, 1.0, smoothstep(0.06, 0.12, halfsize.y));
 	float top_face = smoothstep(0.6, 0.9, wnrm.y);
 	float side = 1.0 - smoothstep(0.3, 0.7, abs(wnrm.y));
 	float sunlit = clamp(dot(wnrm, -normalize(sun_dir)) * 2.0, 0.0, 1.0)

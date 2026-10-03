@@ -23,6 +23,12 @@ const NO_SHADOW := ["flame", "glow", "ember", "window_glow", "backdrop"]
 const SHADOW_ONLY := ["occluder"]
 ## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
 const BACKDROP_LAYER := 2
+## Metric chamfer (m) of the bevelled meshes in the stone materials. The stone
+## shader rebuilds the bevel at this size whatever the piece's scale (the unit
+## mesh's chamfer would stretch with it), varying it per corner so blocks read
+## as worn and chipped rather than machined.
+const STONE_CHAMFER := {"block": 0.085, "slab": 0.045}
+const CHAMFERED := ["stone", "stone_dark", "floor"]
 
 var rng := RandomNumberGenerator.new()
 var meshes := {}
@@ -116,7 +122,7 @@ func flush(parent: Node3D) -> int:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.name = key.replace("|", "_")
 		mmi.multimesh = mm
-		mmi.material_override = materials[b.mat]
+		mmi.material_override = _batch_material(b)
 		if NO_SHADOW.has(b.mat):
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		elif SHADOW_ONLY.has(b.mat):
@@ -127,6 +133,18 @@ func flush(parent: Node3D) -> int:
 		total += b.count
 	batches.clear()
 	return total
+
+
+## The batch's material; bevelled stone gets a copy with a metric chamfer.
+func _batch_material(b: Batch) -> Material:
+	if not (CHAMFERED.has(b.mat) and STONE_CHAMFER.has(b.mesh)):
+		return materials[b.mat]
+	var key := b.mat + "@" + b.mesh
+	if not materials.has(key):
+		var m: ShaderMaterial = materials[b.mat].duplicate()
+		m.set_shader_parameter("chamfer", STONE_CHAMFER[b.mesh])
+		materials[key] = m
+	return materials[key]
 
 
 # ------------------------------------------------------------------ meshes
