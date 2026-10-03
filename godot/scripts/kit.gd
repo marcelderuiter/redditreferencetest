@@ -336,8 +336,8 @@ func _material(kind: String) -> Material:
 			m.shader = load("res://shaders/metal.gdshader")
 			var p: Array = {
 				"iron": [Color(0.24, 0.23, 0.22), 0.5, 0.45, 0.0],
-				"brass": [Color(0.72, 0.5, 0.26), 0.35, 0.55, 0.06],
-				"gold": [Color(0.95, 0.68, 0.3), 0.28, 0.55, 0.08],
+				"brass": [Color(0.52, 0.39, 0.25), 0.42, 0.8, 0.0],
+				"gold": [Color(0.7, 0.55, 0.33), 0.3, 0.85, 0.0],
 				"statue": [Color(0.36, 0.34, 0.32), 0.42, 0.35, 0.0],
 			}[kind]
 			m.set_shader_parameter("base_color", p[0])

@@ -331,10 +331,21 @@ static func crates(kit: Kit, xf: Transform3D) -> void:
 			_l(kit, xf, "box", "wood_dark", c + Basis(Vector3.UP, yaw) * Vector3(0, e * s * 0.46, s * 0.51), Vector3(s, 0.07, 0.03), Basis(Vector3.UP, yaw))
 
 
-## A heap of coins over a gold mound, with goblets and ingots.
+## A heap of coins over a dark, lumpy gold mound, with goblets and ingots:
+## the metal shows as glints where candles catch it, not as a yellow disc.
 static func gold(kit: Kit, xf: Transform3D) -> void:
-	_l(kit, xf, "cone", "gold", Vector3(0, 0.22, 0), Vector3(1.5, 0.44, 1.25))
-	_l(kit, xf, "sphere", "gold", Vector3(0.25, 0.08, 0.1), Vector3(0.9, 0.3, 0.7))
+	var body := Color(0.45, 0.4, 0.36)
+	_l(kit, xf, "cone", "gold", Vector3(0, 0.22, 0), Vector3(1.5, 0.44, 1.25), Basis.IDENTITY, body)
+	_l(kit, xf, "sphere", "gold", Vector3(0.25, 0.08, 0.1), Vector3(0.9, 0.3, 0.7), Basis.IDENTITY, body)
+	# Lumps that break the cone's outline (outside the level's random sequence).
+	var st := kit.rng.state
+	for i in 6:
+		var a := kit.rng.randf() * TAU
+		var d := kit.rng.randf_range(0.35, 0.75)
+		var sz := kit.rng.randf_range(0.3, 0.55)
+		_l(kit, xf, "sphere", "gold", Vector3(cos(a) * d * 0.78, 0.04, sin(a) * d * 0.65), Vector3(sz, sz * 0.4, sz * 0.75),
+			Basis(Vector3.UP, kit.rng.randf() * TAU), body)
+	kit.rng.state = st
 	for i in 320:
 		var a := kit.rng.randf() * TAU
 		var d := sqrt(kit.rng.randf()) * 1.15

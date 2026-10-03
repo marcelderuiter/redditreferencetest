@@ -631,30 +631,38 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 		h = height - y0 - 0.45
 		if h < 0.6:
 			return
-	var panel_mat := "window_glow" if f.get("lit", false) else "void"
-	if kind == "alcove":
-		panel_mat = "stone_dark"
+	# Lit windows are dark arched niches with candles burning in them: the
+	# warmth comes from the flames and the stone they light, not the pane.
+	var lit: bool = f.get("lit", false)
+	var panel_mat := "stone_dark" if kind == "alcove" or lit else "void"
 	# Recessed panel (slightly into the wall), then a proud frame.
 	var panel_c := base + into * 0.02 + Vector3(0, y0 + h * 0.5, 0)
 	var panel_s := Vector3(w, h, 0.04) if along_x else Vector3(0.04, h, w)
-	kit.put("box", panel_mat, panel_c, panel_s, 0.0, Color(1, 1, 1) if panel_mat == "window_glow" else Color(0.6, 0.55, 0.5))
+	kit.put("box", panel_mat, panel_c, panel_s, 0.0, Color(0.6, 0.55, 0.5))
 	var arch_spring := base + into * 0.06 + Vector3(0, y0 + h, 0)
 	_arch(arch_spring, w + 0.2, w * 0.55, side, 0.14, false)
-	if panel_mat == "window_glow" or kind == "alcove":
+	if lit or kind == "alcove":
 		var arch_fill := base + into * 0.025 + Vector3(0, y0 + h + w * 0.22, 0)
-		kit.put("cyl8", panel_mat, arch_fill, Vector3(w * 0.75, 0.035, w * 0.75) if not along_x else Vector3(w * 0.75, 0.035, w * 0.75),
-			0.0, Color(1, 1, 1) if panel_mat == "window_glow" else Color(0.6, 0.55, 0.5))
+		kit.put("cyl8", panel_mat, arch_fill, Vector3(w * 0.75, 0.035, w * 0.75), 0.0, Color(0.6, 0.55, 0.5))
 	for s in [-1.0, 1.0]:
 		var off := Vector3(s * (w * 0.5 + 0.1), 0, 0) if along_x else Vector3(0, 0, s * (w * 0.5 + 0.1))
 		var col_c := base + into * 0.08 + off + Vector3(0, y0 + h * 0.5 - 0.05, 0)
 		_column(col_c, Vector3(0.18, h + 0.1, 0.16) if along_x else Vector3(0.16, h + 0.1, 0.18))
 	# Sill.
 	kit.put("block", "stone", base + into * 0.1 + Vector3(0, y0 - 0.05, 0), Vector3(w + 0.45, 0.12, 0.2) if along_x else Vector3(0.2, 0.12, w + 0.45))
-	if panel_mat == "window_glow":
+	if lit:
 		# Mullion and transom bars.
 		kit.put("box", "iron", panel_c + into * 0.02, Vector3(0.04, h, 0.03) if along_x else Vector3(0.03, h, 0.04))
 		kit.put("box", "iron", panel_c + into * 0.02 + Vector3(0, h * 0.1, 0), Vector3(w, 0.04, 0.03) if along_x else Vector3(0.03, 0.04, w))
-		kit.light(base + into * 0.6 + Vector3(0, y0 + h * 0.6, 0), Color(1.0, 0.6, 0.3), 0.8, 3.0)
+		# Candles on the sill in front of the bars; their draws don't shift the
+		# random sequence the rest of the level is built from.
+		var st := kit.rng.state
+		var sill := base + into * 0.12 + Vector3(0, y0 + 0.01, 0)
+		var across := Vector3(1, 0, 0) if along_x else Vector3(0, 0, 1)
+		Props.candle(kit, sill - across * 0.13, 0.3, 0.04)
+		Props.candle(kit, sill + across * 0.11, 0.18, 0.035)
+		kit.rng.state = st
+		kit.light(sill + into * 0.25 + Vector3(0, 0.45, 0), Props.CANDLE_LIGHT, 1.0, 2.4)
 
 
 func _subtract(range_: Vector2, cuts: Array) -> Array:

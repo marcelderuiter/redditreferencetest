@@ -1,10 +1,11 @@
-// Woven runners and rugs: red field, gold border, repeating diamond motif.
+// Woven runners and rugs: dull red-brown field, faded border and diamond
+// motif (saturated colour comes from the candles, not the dye).
 shader_type spatial;
 render_mode diffuse_burley;
 #include "res://shaders/noise.gdshaderinc"
 
-uniform vec3 field : source_color = vec3(0.36, 0.2, 0.12);
-uniform vec3 trim : source_color = vec3(0.5, 0.36, 0.2);
+uniform vec3 field : source_color = vec3(0.232, 0.172, 0.144);
+uniform vec3 trim : source_color = vec3(0.326, 0.274, 0.222);
 
 varying vec3 lp;
 varying vec3 halfsize;
