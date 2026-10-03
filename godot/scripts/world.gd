@@ -3,10 +3,10 @@ extends RefCounted
 ## Environment, lights and the abyss backdrop around the level.
 
 const AMBIENT := Color(0.5, 0.48, 0.5)
-const FOG := Color8(68, 78, 98)   # grey-blue haze that thickens towards the abyss floor
-# Cool light from the abyss on the distant masonry only (cull-masked to the
-# backdrop layer), so far towers read as edge-lit silhouettes in the haze.
-const ABYSS_LIGHT := Color(0.55, 0.65, 1.0)
+const FOG := Color8(30, 26, 28)   # near-black haze (the grade cools it slightly)
+# A faint cool light on the distant masonry only (cull-masked to the backdrop
+# layer): just enough for the nearest piers' faces to separate from the dark.
+const ABYSS_LIGHT := Color(0.7, 0.76, 0.95)
 const ABYSS_LIGHT_DIR := Vector3(-0.55, -0.65, 0.5)   # travelling down, west, towards the camera
 const SUN_DIR := Vector3(0.15, -0.97, -0.2)   # travelling down, east and north
 const SUN_DIST := 110.0
@@ -51,10 +51,9 @@ static func environment() -> Environment:
 	env.fog_light_color = FOG
 	env.fog_light_energy = 1.0
 	env.fog_density = 0.0004
-	# Height fog only well below the floors: piers and legs stay dark
-	# silhouettes down to ~-30 m, then dissolve into lighter haze, so the
-	# abyss gets brighter with depth instead of being one flat fill.
-	env.fog_height = tune("fog_height", -28.0)
+	# Dark height fog below the floors: each deeper plane of piers sinks
+	# further into near-black, so depth (not light) separates them.
+	env.fog_height = tune("fog_height", -7.0)
 	env.fog_height_density = tune("fog_hd", 0.05)
 	env.fog_sky_affect = 0.0
 	return env
@@ -87,7 +86,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	var rim := DirectionalLight3D.new()
 	rim.name = "AbyssLight"
 	rim.light_color = ABYSS_LIGHT
-	rim.light_energy = tune("rim", 1.2)
+	rim.light_energy = tune("rim", 0.3)
 	rim.light_specular = 0.3
 	rim.light_cull_mask = Kit.BACKDROP_LAYER
 	rim.shadow_enabled = false

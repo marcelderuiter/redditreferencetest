@@ -285,7 +285,7 @@ func _material(kind: String) -> Material:
 				m.set_shader_parameter("base_color", Color(0.46, 0.41, 0.36))
 				m.set_shader_parameter("wear", 0.6)
 			elif kind == "backdrop":
-				m.set_shader_parameter("base_color", Color(0.25, 0.24, 0.26))
+				m.set_shader_parameter("base_color", Color(0.2, 0.19, 0.2))
 				m.set_shader_parameter("under_min", 1.0)
 				m.set_shader_parameter("bump", 0.4)
 				m.set_shader_parameter("detail", 0.25)
