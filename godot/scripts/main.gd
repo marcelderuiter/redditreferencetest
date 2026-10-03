@@ -139,7 +139,7 @@ func _setup_viewport() -> void:
 func _setup_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.025, 0.03, 0.045)
+	env.background_color = Color(0.035, 0.028, 0.028)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.34, 0.42, 0.45)
 	env.ambient_light_energy = 0.24
@@ -147,7 +147,7 @@ func _setup_environment() -> void:
 	env.tonemap_exposure = 1.6
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
-	env.fog_light_color = Color(0.085, 0.1, 0.14)
+	env.fog_light_color = Color(0.1, 0.09, 0.095)
 	env.fog_density = 0.01
 	env.fog_height = -8.0
 	env.fog_height_density = 0.025

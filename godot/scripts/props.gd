@@ -177,7 +177,7 @@ func bookcase(p: Vector3, yaw: float) -> void:
 		while x < 0.66:
 			var w := rng.randf_range(0.06, 0.12)
 			var h := rng.randf_range(0.28, 0.38)
-			var c := Color.from_hsv(rng.randf_range(0.0, 0.12), rng.randf_range(0.4, 0.8), rng.randf_range(0.25, 0.6))
+			var c := Color.from_hsv(rng.randf_range(0.05, 0.11), rng.randf_range(0.35, 0.7), rng.randf_range(0.15, 0.4))
 			b.box("box", "paint", _xf(p, yaw, Vector3(x + w * 0.5, 0.2 + row * 0.45 + h * 0.5, 0.12)), Vector3(w * 0.9, h, 0.3), yaw, c)
 			x += w
 	candle(_xf(p, yaw, Vector3(0.5, 2.0, 0.05)), 0.2, 0.04)

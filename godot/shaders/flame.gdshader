@@ -4,7 +4,7 @@ render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabl
 
 uniform vec3 core : source_color = vec3(1.0, 0.72, 0.32);
 uniform vec3 outer : source_color = vec3(1.0, 0.42, 0.08);
-uniform float energy = 3.0;
+uniform float energy = 1.7;
 
 void fragment() {
 	vec2 p = UV * 2.0 - 1.0;
