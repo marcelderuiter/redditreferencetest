@@ -36,23 +36,28 @@ func _register() -> void:
 	b.register_mesh("arch", Meshes.arch_panel())
 	var stone := _mat("stone", {})
 	b.register_material("stone", stone)
-	b.register_material("stone_dark", _mat("stone", {"albedo": Color(0.2, 0.17, 0.15)}))
-	b.register_material("floor", _mat("stone", {"albedo": Color(0.36, 0.33, 0.29), "bump_strength": 1.5}))
+	b.register_material("stone_dark", _mat("stone", {"albedo": Color(0.22, 0.2, 0.18)}))
+	b.register_material("floor", _mat("stone", {"albedo": Color(0.32, 0.28, 0.23), "bump_strength": 1.5}))
 	b.register_material("marble", _mat("stone", {"albedo": Color(0.62, 0.57, 0.5), "bump_strength": 0.3, "grime": 0.25}))
 	b.register_material("masonry", _mat("masonry", {}))
+	b.register_material("masonry_dark", _mat("masonry", {"albedo": Color(0.16, 0.15, 0.14)}))
+	var void_mat := StandardMaterial3D.new()
+	void_mat.albedo_color = Color(0.015, 0.015, 0.02)
+	void_mat.roughness = 1.0
+	b.register_material("void", void_mat)
 	b.register_material("wood", _mat("wood", {}))
 	b.register_material("wood_dark", _mat("wood", {"albedo": Color(0.17, 0.125, 0.08)}))
 	b.register_material("bronze", _mat("metal", {}))
 	b.register_material("iron", _mat("metal", {"albedo": Color(0.2, 0.19, 0.18), "roughness_v": 0.5, "metallic_v": 0.7}))
 	b.register_material("pewter", _mat("metal", {"albedo": Color(0.38, 0.34, 0.3), "roughness_v": 0.38, "tarnish": 0.6}))
 	b.register_material("gold", _mat("metal", {"albedo": Color(0.85, 0.6, 0.22), "roughness_v": 0.25, "tarnish": 0.15}))
-	b.register_material("cloth", _mat("cloth", {}))
+	b.register_material("cloth", _mat("cloth", {"field": Color(0.36, 0.2, 0.1)}))
 	b.register_material("flame", _mat("flame", {}))
 	b.register_material("glow", _mat("glow", {}))
-	b.register_material("glow_dim", _mat("glow", {"energy": 0.55, "tint": Color(1.0, 0.5, 0.2)}))
+	b.register_material("glow_dim", _mat("glow", {"energy": 0.28, "tint": Color(1.0, 0.42, 0.1)}))
 	b.register_material("glow_fire", _mat("glow", {"energy": 3.0, "tint": Color(1.0, 0.4, 0.08)}))
 	b.register_material("wax", _mat("wax", {}))
-	b.register_material("backdrop", _mat("backdrop", {}))
+	b.register_material("backdrop", _mat("backdrop", {"albedo": Color(0.16, 0.17, 0.21)}))
 	var parchment := StandardMaterial3D.new()
 	parchment.albedo_color = Color(0.75, 0.65, 0.48)
 	b.register_material("parchment", parchment)
@@ -130,7 +135,7 @@ func _rect_floor(room: Dictionary) -> void:
 				var top := y + rng.randf_range(-0.025, 0.02)
 				var c := Vector3((x0 + x1) * 0.5, top - h * 0.5, z + dz * 0.5)
 				var tb := Basis(Vector3.UP, rng.randf_range(-0.04, 0.04)) * Basis(Vector3.RIGHT, rng.randf_range(-0.05, 0.05)) * Basis(Vector3.BACK, rng.randf_range(-0.05, 0.05))
-				b.add("bbox_s", "floor", Transform3D(tb * Basis.from_scale(Vector3(x1 - x0 - 0.05, h, dz - 0.05)), c), _tint(0.95, 0.6))
+				b.add("bbox_s", "floor", Transform3D(tb * Basis.from_scale(Vector3(x1 - x0 - 0.035, h, dz - 0.035)), c), _tint(0.95, 0.6))
 			x += dx
 		z += dz
 		row += 1
@@ -371,41 +376,49 @@ func _rim_wall(room: Dictionary) -> void:
 func _tower(room: Dictionary) -> void:
 	var r: Rect2 = room.rect
 	var top: float = room.y - 0.1 - FLOOR_T
-	var core := r.grow(-0.7)
+	var core := r.grow(-1.3)
 	var h := top - ABYSS
-	b.box("box", "masonry", Vector3(core.get_center().x, top - h * 0.5, core.get_center().y), Vector3(core.size.x, h, core.size.y))
-	# Corbel course of large blocks just under the slab.
-	_rim_course(core.position - Vector2(0.25, 0.25), Vector2(core.end.x + 0.25, core.position.y - 0.25), top - 0.0, Vector2(0, -1))
-	_rim_course(Vector2(core.position.x - 0.25, core.end.y + 0.25), core.end + Vector2(0.25, 0.25), top, Vector2(0, 1))
-	_rim_course(core.position - Vector2(0.25, 0.25), Vector2(core.position.x - 0.25, core.end.y + 0.25), top, Vector2(-1, 0))
-	_rim_course(Vector2(core.end.x + 0.25, core.position.y - 0.25), core.end + Vector2(0.25, 0.25), top, Vector2(1, 0))
-	# Buttress piers at the corners and along long sides.
-	var piers := []
-	for p in [core.position, Vector2(core.end.x, core.position.y), Vector2(core.position.x, core.end.y), core.end]:
-		piers.append(p)
-	for axis in 2:
-		var length: float = core.size[axis]
-		var n := int(length / 4.0)
-		for k in range(1, n):
-			var t := core.position[axis] + length * k / n
-			for other in [core.position[1 - axis], core.end[1 - axis]]:
-				var p := Vector2.ZERO
-				p[axis] = t
-				p[1 - axis] = other
-				piers.append(p)
-	for p in piers:
-		b.box("box", "masonry", Vector3(p.x, top - 1.0 - (h - 1.0) * 0.5, p.y), Vector3(1.3, h - 1.0, 1.3), 0.0, Color(0.9, 0.88, 0.85))
-		# Real block courses on the upper part of each pier, where light reaches.
-		for k in 8:
-			var s := 1.38 + (0.04 if k % 2 else 0.0)
-			b.box("bbox", "stone", Vector3(p.x, top - 1.2 - 0.5 * k, p.y), Vector3(s, 0.47, s), 0.0, _tint(0.7 - k * 0.05, 0.25))
-	# Bronze/wood cross bracing between piers under the overhang.
+	b.box("box", "masonry_dark", Vector3(core.get_center().x, top - h * 0.5, core.get_center().y), Vector3(core.size.x, h, core.size.y))
+	b.box("box", "stone_dark", Vector3(r.get_center().x, top - 0.6, r.get_center().y), Vector3(r.size.x - 0.6, 1.2, r.size.y - 0.6))
+	# Piers along every face; arched recesses between them.
+	var line := r.grow(-0.6)
+	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end, Vector2(line.position.x, line.end.y)]
+	for side in 4:
+		var a: Vector2 = corners[side]
+		var c: Vector2 = corners[(side + 1) % 4]
+		var length := a.distance_to(c)
+		var dir := (c - a) / length
+		var out := Vector2(dir.y, -dir.x)   # corners run clockwise in screen space: outward normal
+		var yaw := -atan2(dir.y, dir.x)
+		var n := maxi(1, int(round(length / 2.6)))
+		for k in n:
+			var p := a + dir * (length * k / n)
+			_pier(Vector3(p.x, top, p.y), top - ABYSS)
+			# Lintel blocks and a dark arch between this pier and the next.
+			var q := a + dir * (length * (k + 0.5) / n)
+			var gap := length / n - 1.1
+			var face := q + out * 0.35
+			for course in 2:
+				b.box("bbox", "stone", Vector3(face.x, top - 0.25 - course * 0.42, face.y), Vector3(gap + 0.1, 0.4, 0.5), yaw, _tint(0.8 - course * 0.1, 0.3))
+			var recess := q - out * 0.65
+			var face_yaw := atan2(out.x, out.y)
+			b.add("arch", "void", Transform3D(Basis(Vector3.UP, face_yaw) * Basis.from_scale(Vector3(gap, 4.5, 1)), Vector3(recess.x, top - 5.4, recess.y)))
+			if rng.randf() < 0.12:
+				b.add("arch", "glow_dim", Transform3D(Basis(Vector3.UP, face_yaw) * Basis.from_scale(Vector3(gap * 0.4, 1.4, 1)), Vector3(recess.x, top - 3.2, recess.y) + Vector3(out.x, 0, out.y) * 0.02), Color(1, 1, 1) * 0.6)
+	# Wooden scaffold beams between piers, lower down.
 	for k in 2:
-		var by := top - 3.0 - k * 4.0
-		for side in [core.position.y - 0.7, core.end.y + 0.7]:
-			b.box("box", "wood_dark", Vector3(core.get_center().x, by, side), Vector3(core.size.x + 1.4, 0.3, 0.3))
-		for side in [core.position.x - 0.7, core.end.x + 0.7]:
-			b.box("box", "wood_dark", Vector3(side, by, core.get_center().y), Vector3(0.3, 0.3, core.size.y + 1.4))
+		var by := top - 6.0 - k * 5.0
+		for z in [line.position.y, line.end.y]:
+			b.box("box", "wood_dark", Vector3(line.get_center().x, by, z), Vector3(line.size.x, 0.3, 0.3))
+		for x in [line.position.x, line.end.x]:
+			b.box("box", "wood_dark", Vector3(x, by, line.get_center().y), Vector3(0.3, 0.3, line.size.y))
+
+
+func _pier(top: Vector3, h: float) -> void:
+	b.box("box", "masonry", top + Vector3(0, -1.0 - (h - 1.0) * 0.5, 0), Vector3(1.1, h - 1.0, 1.1), 0.0, Color(0.95, 0.92, 0.88))
+	for k in 10:
+		var s := 1.16 + (0.05 if k % 2 else 0.0)
+		b.box("bbox", "stone", top + Vector3(0, -0.25 - 0.45 * k, 0), Vector3(s, 0.43, s), rng.randf_range(-0.02, 0.02), _tint(0.85 - k * 0.04, 0.3))
 
 
 func _round_tower(room: Dictionary) -> void:
@@ -556,13 +569,63 @@ func _stairs(link: Dictionary) -> void:
 
 # --- props, lights, backdrop -----------------------------------------------
 
+## Clutter against the walls (barrels, crates, candles, rubble). Placement uses
+## a fixed seed so the walk check and the game agree; returns [kind, pos, radius].
+static func plan_clutter(solved_layout: Dictionary) -> Array:
+	var r := RandomNumberGenerator.new()
+	r.seed = 4242
+	var out := []
+	var kinds := ["barrel", "crate", "candles", "rubble", "candles", "rubble", "sack"]
+	for room in solved_layout.rooms.values():
+		if room.shape != "rect" or min(room.rect.size.x, room.rect.size.y) < 5.0:
+			continue
+		var rect: Rect2 = room.rect
+		var inset := Layout.WALL_T + 0.3
+		var sides := {"n": [Vector2(rect.position.x, rect.position.y + inset), Vector2(1, 0), 0],
+			"s": [Vector2(rect.position.x, rect.end.y - inset), Vector2(1, 0), 0],
+			"w": [Vector2(rect.position.x + inset, rect.position.y), Vector2(0, 1), 1],
+			"e": [Vector2(rect.end.x - inset, rect.position.y), Vector2(0, 1), 1]}
+		for side in sides:
+			if room.walls.get(side, 0.0) <= 0.0:
+				continue
+			var axis: int = sides[side][2]
+			var length: float = rect.size[axis]
+			var t := 2.4
+			while t < length - 2.4:
+				var p: Vector2 = sides[side][0] + sides[side][1] * t
+				var near_open := false
+				for o in room.openings[side]:
+					if p[axis] > o.x - 1.4 and p[axis] < o.y + 1.4:
+						near_open = true
+				if not near_open and r.randf() < 0.5:
+					var kind: String = kinds[r.randi() % kinds.size()]
+					out.append([kind, Vector3(p.x, room.y, p.y), 0.4])
+				t += r.randf_range(1.2, 2.4)
+	return out
+
+
 func _props() -> void:
+	for c in plan_clutter(solved):
+		match c[0]:
+			"barrel": props.barrel(c[1])
+			"crate": props.crate(c[1], rng.randf() * TAU)
+			"candles": props.candle_cluster(c[1], rng.randi_range(2, 5), 0.25, rng.randf() < 0.35)
+			"rubble": _rubble(c[1])
+			"sack": props.sack(c[1])
 	for room_name in Layout.PROPS:
 		var room: Dictionary = solved.rooms[room_name]
 		for entry in Layout.PROPS[room_name]:
 			var kind: String = entry[0]
 			var pos := Layout.prop_pos(room, entry[1], entry[2])
 			props.build(kind, pos, entry[3], entry[4] if entry.size() > 4 else null)
+
+
+func _rubble(p: Vector3) -> void:
+	for k in rng.randi_range(3, 6):
+		var s := rng.randf_range(0.18, 0.4)
+		var q := p + Vector3(rng.randf_range(-0.35, 0.35), s * 0.4, rng.randf_range(-0.35, 0.35))
+		var basis := Basis(Vector3.UP, rng.randf() * TAU) * Basis(Vector3.RIGHT, rng.randf_range(-0.4, 0.4)) * Basis.from_scale(Vector3(s * 1.3, s * 0.8, s))
+		b.add("bbox", "stone", Transform3D(basis, q), _tint(0.85, 0.3))
 
 
 func _emit_lights(parent: Node3D) -> void:

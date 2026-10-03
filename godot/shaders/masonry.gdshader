@@ -3,7 +3,7 @@ shader_type spatial;
 render_mode diffuse_burley;
 #include "res://shaders/noise.gdshaderinc"
 
-uniform vec3 albedo : source_color = vec3(0.30, 0.27, 0.24);
+uniform vec3 albedo : source_color = vec3(0.36, 0.33, 0.29);
 uniform vec2 block = vec2(0.7, 0.4);
 
 varying vec3 wpos;
@@ -27,7 +27,7 @@ void fragment() {
 	vec3 c = albedo * COLOR.rgb * (0.75 + 0.4 * id) * (0.75 + 0.4 * n);
 	c *= mix(0.35, 1.0, m);
 	// Fade into the abyss.
-	c *= clamp(1.0 + wpos.y / 22.0, 0.08, 1.0);
+	c *= clamp(1.0 + (wpos.y + 1.0) / 24.0, 0.06, 1.0);
 	ALBEDO = c;
 	ROUGHNESS = 0.9;
 	vec3 g = vec3(0.0);

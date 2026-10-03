@@ -16,10 +16,10 @@ void fragment() {
 	float u = an.x > an.z ? wpos.z : wpos.x;
 	vec2 cell = floor(vec2(u / 2.2, wpos.y / 3.5));
 	vec2 f = fract(vec2(u / 2.2, wpos.y / 3.5));
-	float lit = step(0.93, hash13(vec3(cell, an.x))) * step(0.35, f.x) * step(f.x, 0.65) * step(0.2, f.y) * step(f.y, 0.8);
+	float lit = step(0.96, hash13(vec3(cell, an.x))) * step(0.35, f.x) * step(f.x, 0.65) * step(0.2, f.y) * step(f.y, 0.8);
 	float course = smoothstep(0.0, 0.06, fract(wpos.y / 0.9)) * 0.3 + 0.7;
 	vec3 c = albedo * COLOR.rgb * (0.7 + 0.5 * fbm3(wpos * 0.5)) * course;
 	ALBEDO = c;
 	ROUGHNESS = 0.95;
-	EMISSION = vec3(1.0, 0.45, 0.15) * lit * 1.2 * COLOR.a;
+	EMISSION = vec3(1.0, 0.45, 0.15) * lit * 0.5 * COLOR.a * step(0.0, -wpos.y - 10.0 + 40.0 * step(60.0, length(wpos.xz)));
 }

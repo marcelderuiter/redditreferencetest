@@ -9,7 +9,7 @@ const FOOTPRINT := {
 	"shrine_statue": 1.3, "altar": 1.1, "orrery": 1.9, "gold": 0.7, "chest": 0.6, "winch": 0.4,
 }
 
-const CANDLE_LIGHT := Color(1.0, 0.66, 0.3)
+const CANDLE_LIGHT := Color(1.0, 0.66, 0.2)
 
 var b: Batch
 var lights: Array
@@ -69,7 +69,7 @@ func candle_cluster(p: Vector3, n: int, spread: float, with_light: bool) -> void
 		var d := sqrt(rng.randf()) * spread
 		candle(p + Vector3(cos(a) * d, 0, sin(a) * d), rng.randf_range(0.12, 0.38), rng.randf_range(0.035, 0.06))
 	if with_light:
-		light(p + Vector3(0, 0.6, 0), 1.8, 4.5)
+		light(p + Vector3(0, 0.6, 0), 2.6, 5.0)
 
 
 func candelabra(p: Vector3) -> void:
@@ -79,7 +79,7 @@ func candelabra(p: Vector3) -> void:
 	b.box("bbox", "stone", p + Vector3(0, 1.22, 0), Vector3(0.5, 0.12, 0.5))
 	b.box("cyl8", "bronze", p + Vector3(0, 1.32, 0), Vector3(0.36, 0.06, 0.36))
 	candle_cluster(p + Vector3(0, 1.35, 0), 3, 0.11, false)
-	light(p + Vector3(0, 1.9, 0), 2.2, 5.5)
+	light(p + Vector3(0, 1.9, 0), 3.2, 6.0)
 
 
 func knight(p: Vector3, yaw: float, s := 1.0) -> void:
@@ -215,6 +215,12 @@ func crate(p: Vector3, yaw: float) -> void:
 	if rng.randf() < 0.5:
 		var s2 := s * 0.7
 		b.box("bbox", "wood", p + Vector3(0.05, s + s2 * 0.5, 0), Vector3(s2, s2, s2), yaw + 0.5, Color(0.9, 0.9, 0.9), Color(rng.randf(), 0, 0, 0))
+
+
+func sack(p: Vector3) -> void:
+	for k in rng.randi_range(1, 3):
+		var q := p + Vector3(rng.randf_range(-0.25, 0.25), 0.22, rng.randf_range(-0.25, 0.25))
+		b.box("sphere", "parchment", q, Vector3(0.5, 0.5, 0.45), rng.randf() * TAU, Color(0.55, 0.45, 0.35))
 
 
 func chest(p: Vector3, yaw: float) -> void:

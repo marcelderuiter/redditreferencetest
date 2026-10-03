@@ -48,6 +48,8 @@ func _ready() -> void:
 
 
 func _block_props() -> void:
+	for c in Builder.plan_clutter(solved):
+		grid.block(Vector2(c[1].x, c[1].z), c[2])
 	for room_name in Layout.PROPS:
 		var room: Dictionary = solved.rooms[room_name]
 		for e in Layout.PROPS[room_name]:
@@ -107,10 +109,10 @@ func _setup_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.025, 0.03, 0.045)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.33, 0.4, 0.58)
+	env.ambient_light_color = Color(0.38, 0.4, 0.5)
 	env.ambient_light_energy = 0.35
-	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	env.tonemap_exposure = 1.0
+	env.tonemap_mode = Environment.TONE_MAPPER_AGX
+	env.tonemap_exposure = 1.6
 	env.fog_enabled = true
 	env.fog_mode = Environment.FOG_MODE_EXPONENTIAL
 	env.fog_light_color = Color(0.085, 0.1, 0.14)
@@ -131,9 +133,9 @@ func _setup_environment() -> void:
 	we.environment = env
 	world.add_child(we)
 	var sun := DirectionalLight3D.new()
-	sun.light_color = Color(1.0, 0.8, 0.52)
-	sun.light_energy = 0.5
-	sun.rotation_degrees = Vector3(-58, -35, 0)
+	sun.light_color = Color(0.95, 0.85, 0.75)
+	sun.light_energy = 0.4
+	sun.rotation_degrees = Vector3(-40, -30, 0)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 140.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
@@ -143,6 +145,7 @@ func _setup_environment() -> void:
 	fill.light_color = Color(0.45, 0.55, 0.8)
 	fill.light_energy = 0.4
 	fill.rotation_degrees = Vector3(-20, 150, 0)
+	fill.light_specular = 0.0
 	world.add_child(fill)
 
 
