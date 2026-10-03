@@ -69,7 +69,7 @@ static func environment() -> Environment:
 	# Dark height fog below the floors: each deeper plane of piers sinks
 	# further into near-black, so depth (not light) separates them.
 	env.fog_height = tune("fog_height", -9)
-	env.fog_height_density = tune("fog_hd", 0.07)
+	env.fog_height_density = tune("fog_hd", 0.098)
 	env.fog_sky_affect = 0.0
 	return env
 
@@ -102,7 +102,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	var rim := DirectionalLight3D.new()
 	rim.name = "AbyssLight"
 	rim.light_color = ABYSS_LIGHT
-	rim.light_energy = tune("rim", 0.42)
+	rim.light_energy = tune("rim", 0.588)
 	rim.light_specular = 0.3
 	rim.light_cull_mask = Kit.BACKDROP_LAYER
 	rim.shadow_enabled = false
