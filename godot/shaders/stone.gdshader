@@ -3,10 +3,15 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 #include "res://shaders/noise.gdshaderinc"
 
-uniform vec3 base_color : source_color = vec3(0.45, 0.41, 0.37);
+uniform vec3 base_color : source_color = vec3(0.46, 0.41, 0.385);
 uniform float roughness_v = 0.9;
 uniform float bump = 1.0;
 uniform float wear = 0.4;
+// Faces below the floors sit in the shadow of the rooms above: sky light
+// can't reach them, so darken with depth (fog lightens them again further down).
+uniform float under_top = -1.6;
+uniform float under_bottom = -8.0;
+uniform float under_min = 0.3;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -45,6 +50,7 @@ void fragment() {
 	float up = clamp(wnrm.y, 0.0, 1.0);
 	col = mix(col, col * vec3(1.1, 1.05, 0.98), up * wear);
 	col *= mix(0.8, 1.0, clamp(wnrm.y + 1.0, 0.0, 1.0));
+	col *= mix(1.0, under_min, smoothstep(under_top, under_bottom, wpos.y));
 	ALBEDO = col;
 	ROUGHNESS = roughness_v - rim * 0.1;
 	SPECULAR = 0.35;

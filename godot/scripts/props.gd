@@ -49,7 +49,7 @@ static func rotated_half(size: Vector2, rot_deg: float) -> Vector2:
 
 # ---------------------------------------------------------------- builders
 
-const CANDLE_LIGHT := Color(1.0, 0.72, 0.5)
+const CANDLE_LIGHT := Color(1.0, 0.68, 0.5)
 
 
 static func build_all(kit: Kit, layout: Layout) -> void:
@@ -219,6 +219,10 @@ static func big_statue(kit: Kit, xf: Transform3D, opts: Dictionary) -> void:
 	if opts.get("robed", false):
 		_l(kit, xf, "cone", m, Vector3(0, 2.72, -0.02), Vector3(0.46, 0.5, 0.46))
 		_l(kit, xf, "box", "brass", Vector3(0, 1.95, 0.3), Vector3(0.1, 0.4, 0.04))
+		# Votive candles at the plinth light the figure from below.
+		for sx in [-0.5, 0.5]:
+			candles(kit, xf * Vector3(sx, 0.62, 0.45), 3, 0.1)
+		kit.light(xf * Vector3(0, 1.0, 1.0), Color(1.0, 0.7, 0.45), 2.5, 4.0)
 	else:
 		_l(kit, xf, "cyl", "brass", Vector3(0, 2.84, 0.02), Vector3(0.3, 0.12, 0.3))
 		_l(kit, xf, "box", "iron", Vector3(0, 1.5, 0.42), Vector3(0.08, 1.4, 0.03))
@@ -309,21 +313,23 @@ static func crates(kit: Kit, xf: Transform3D) -> void:
 
 ## A heap of coins over a gold mound, with goblets and ingots.
 static func gold(kit: Kit, xf: Transform3D) -> void:
-	_l(kit, xf, "sphere", "gold", Vector3(0, 0.0, 0), Vector3(1.5, 0.55, 1.25))
-	for i in 220:
+	_l(kit, xf, "cone", "gold", Vector3(0, 0.22, 0), Vector3(1.5, 0.44, 1.25))
+	_l(kit, xf, "sphere", "gold", Vector3(0.25, 0.08, 0.1), Vector3(0.9, 0.3, 0.7))
+	for i in 320:
 		var a := kit.rng.randf() * TAU
-		var d := sqrt(kit.rng.randf())
+		var d := sqrt(kit.rng.randf()) * 1.15
 		var x := cos(a) * d * 0.78
 		var z := sin(a) * d * 0.65
-		var h := 0.27 * (1.0 - d * d) + 0.015
-		var tilt := Basis.from_euler(Vector3(kit.jitter(0.9), kit.rng.randf() * TAU, kit.jitter(0.9)))
-		_l(kit, xf, "cyl8", "gold", Vector3(x, h, z), Vector3(0.09, 0.015, 0.09), tilt, kit.tint(Color(1, 1, 1), 0.15))
+		var h := maxf(0.44 * (1.0 - d), 0.0) + 0.012
+		var tilt := Basis.from_euler(Vector3(kit.jitter(0.7), kit.rng.randf() * TAU, kit.jitter(0.7)))
+		_l(kit, xf, "cyl8", "gold", Vector3(x, h, z), Vector3(0.075, 0.014, 0.075), tilt, kit.tint(Color(1, 1, 1), 0.2))
 	for i in 3:
-		var c := Vector3(kit.jitter(0.5), 0.2, kit.jitter(0.4))
-		_l(kit, xf, "cyl8", "gold", c + Vector3(0, 0.12, 0), Vector3(0.12, 0.14, 0.12))
-		_l(kit, xf, "cyl8", "gold", c + Vector3(0, 0.02, 0), Vector3(0.05, 0.12, 0.05))
+		var c := Vector3(kit.jitter(0.6), 0.0, kit.jitter(0.5))
+		_l(kit, xf, "cyl8", "gold", c + Vector3(0, 0.1, 0), Vector3(0.12, 0.14, 0.12))
+		_l(kit, xf, "cyl8", "gold", c + Vector3(0, 0.02, 0), Vector3(0.05, 0.08, 0.05))
 	for i in 4:
-		_l(kit, xf, "block", "gold", Vector3(kit.jitter(0.6), 0.12, kit.jitter(0.5)), Vector3(0.22, 0.07, 0.1), Basis(Vector3.UP, kit.jitter(1.5)))
+		_l(kit, xf, "block", "gold", Vector3(kit.jitter(0.8), 0.04, kit.jitter(0.6)), Vector3(0.22, 0.07, 0.1), Basis(Vector3.UP, kit.jitter(1.5)))
+	_l(kit, xf, "sphere", "brass", Vector3(-0.5, 0.12, 0.35), Vector3(0.26, 0.24, 0.26))
 
 
 static func rug(kit: Kit, xf: Transform3D, size: Vector2) -> void:
@@ -381,23 +387,25 @@ static func shelf(kit: Kit, xf: Transform3D) -> void:
 ## The brass orrery: concentric floor rings, radial bars, and a tall column
 ## with armillary rings on top.
 static func orrery(kit: Kit, xf: Transform3D) -> void:
-	for r in [1.15, 1.7, 2.4, 3.05]:
-		_l(kit, xf, "ring", "brass", Vector3(0, 0.02, 0), Vector3(r * 2.0, 0.25, r * 2.0))
-	for i in 12:
-		var a := TAU * i / 12.0
+	for r in [1.25, 2.3, 3.0]:
+		_l(kit, xf, "ring", "brass", Vector3(0, 0.0, 0), Vector3(r * 2.0, 0.18, r * 2.0))
+	for i in 8:
+		var a := TAU * i / 8.0
 		var d := Vector3(cos(a), 0, sin(a))
-		_l(kit, xf, "box", "brass", d * 2.1 + Vector3(0, 0.015, 0), Vector3(1.9, 0.03, 0.06), Basis(Vector3.UP, -a))
-		_l(kit, xf, "block", "brass", d * 2.75 + Vector3(0, 0.03, 0), Vector3(0.22, 0.05, 0.1), Basis(Vector3.UP, -a))
-	_l(kit, xf, "cyl", "stone", Vector3(0, 0.2, 0), Vector3(1.5, 0.4, 1.5))
-	_l(kit, xf, "cyl", "brass", Vector3(0, 0.42, 0), Vector3(1.3, 0.06, 1.3))
-	_l(kit, xf, "cyl", "iron", Vector3(0, 1.2, 0), Vector3(0.75, 1.5, 0.75))
-	for y in [0.6, 1.0, 1.4, 1.8]:
-		_l(kit, xf, "cyl", "brass", Vector3(0, y, 0), Vector3(0.82, 0.06, 0.82))
-	_l(kit, xf, "cyl", "brass", Vector3(0, 2.0, 0), Vector3(0.95, 0.1, 0.95))
-	_l(kit, xf, "sphere", "brass", Vector3(0, 2.45, 0), Vector3(0.36, 0.36, 0.36))
+		_l(kit, xf, "box", "brass", d * 1.78 + Vector3(0, 0.01, 0), Vector3(1.0, 0.025, 0.05), Basis(Vector3.UP, -a))
+		_l(kit, xf, "block", "brass", d * 2.65 + Vector3(0, 0.02, 0), Vector3(0.24, 0.04, 0.1), Basis(Vector3.UP, -a))
+	_l(kit, xf, "cyl", "stone", Vector3(0, 0.2, 0), Vector3(1.6, 0.4, 1.6))
+	_l(kit, xf, "cyl", "stone", Vector3(0, 0.5, 0), Vector3(1.25, 0.2, 1.25))
+	_l(kit, xf, "cyl", "brass", Vector3(0, 0.62, 0), Vector3(1.1, 0.05, 1.1))
+	_l(kit, xf, "cyl", "iron", Vector3(0, 1.4, 0), Vector3(0.62, 1.6, 0.62))
+	for y in [0.8, 1.3, 1.8]:
+		_l(kit, xf, "cyl", "brass", Vector3(0, y, 0), Vector3(0.7, 0.05, 0.7))
+	_l(kit, xf, "cyl", "iron", Vector3(0, 2.25, 0), Vector3(0.85, 0.12, 0.85))
+	_l(kit, xf, "cyl", "iron", Vector3(0, 2.55, 0), Vector3(0.45, 0.5, 0.45))
+	_l(kit, xf, "cone", "iron", Vector3(0, 2.95, 0), Vector3(0.5, 0.3, 0.5))
+	_l(kit, xf, "sphere", "brass", Vector3(0, 3.18, 0), Vector3(0.18, 0.18, 0.18))
 	for k in 3:
-		_l(kit, xf, "ring", "brass", Vector3(0, 2.45, 0), Vector3(1.0, 0.2, 1.0), Basis(Vector3.UP, k * 1.05) * Basis(Vector3.RIGHT, 1.1))
-	_l(kit, xf, "cone", "brass", Vector3(0, 2.85, 0), Vector3(0.12, 0.3, 0.12))
+		_l(kit, xf, "ring", "brass", Vector3(0, 2.55, 0), Vector3(1.1, 0.12, 1.1), Basis(Vector3.UP, k * 1.05) * Basis(Vector3.RIGHT, 1.2))
 
 
 static func anvil(kit: Kit, xf: Transform3D) -> void:

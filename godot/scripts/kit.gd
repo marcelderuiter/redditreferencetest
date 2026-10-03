@@ -41,7 +41,7 @@ func _init(seed: int) -> void:
 	meshes.link = _torus(8, 4, 0.3, 0.5)
 	meshes.flame = _sphere(8, 6)
 	for m in ["stone", "stone_dark", "floor", "wood", "wood_dark", "iron", "brass", "gold", "cloth",
-			"wax", "statue", "flame", "glow", "ember", "window_glow", "paper", "backdrop"]:
+			"wax", "statue", "flame", "glow", "ember", "window_glow", "paper", "backdrop", "void"]:
 		materials[m] = _material(m)
 
 
@@ -281,6 +281,7 @@ func _material(kind: String) -> Material:
 				m.set_shader_parameter("wear", 0.6)
 			elif kind == "backdrop":
 				m.set_shader_parameter("base_color", Color(0.25, 0.24, 0.26))
+				m.set_shader_parameter("under_min", 1.0)
 				m.set_shader_parameter("bump", 0.6)
 		"wood", "wood_dark":
 			m.shader = load("res://shaders/wood.gdshader")
@@ -300,6 +301,8 @@ func _material(kind: String) -> Material:
 			m.set_shader_parameter("self_lit", p[3])
 		"cloth":
 			m.shader = load("res://shaders/cloth.gdshader")
+		"void":
+			m.shader = load("res://shaders/void.gdshader")
 		"wax", "paper":
 			m.shader = load("res://shaders/wax.gdshader")
 			if kind == "paper":
@@ -314,5 +317,5 @@ func _material(kind: String) -> Material:
 				m.set_shader_parameter("strength", 3.0)
 			elif kind == "window_glow":
 				m.set_shader_parameter("core", Color(1.0, 0.5, 0.16))
-				m.set_shader_parameter("strength", 1.6)
+				m.set_shader_parameter("strength", 1.1)
 	return m

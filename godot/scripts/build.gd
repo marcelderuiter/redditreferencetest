@@ -240,6 +240,9 @@ func _side_walls(r: Layout.Room, side: String) -> void:
 			if b - a > 0.05:
 				var ur := Rect2(a, band.position.y, b - a, band.size.y) if along_x else Rect2(band.position.x, a, band.size.x, b - a)
 				_course_wall(side, ur, u[1] - SLAB, base, "stone")
+		if side in r.opts.get("balustrade", []):
+			_balustrade(side, rect, base, r.y, r.y + height)
+			continue
 		_course_wall(side, rect, base, r.y + height, "stone")
 		_crenellate(side, rect, r.y + height)
 		if height >= 1.0:
@@ -260,8 +263,8 @@ func _course_wall(side: String, rect: Rect2, y0: float, y1: float, mat: String, 
 	if length < 0.05 or y1 - y0 < 0.05:
 		return
 	var c := rect.get_center()
-	kit.put("box", "stone_dark", Vector3(c.x, (y0 + y1) * 0.5, c.y),
-		Vector3(rect.size.x - (0.0 if along_x else 0.1), y1 - y0 - 0.02, rect.size.y - (0.1 if along_x else 0.0)), 0.0, Color(0.16, 0.15, 0.15))
+	kit.put("box", "void", Vector3(c.x, (y0 + y1) * 0.5, c.y),
+		Vector3(rect.size.x - (0.0 if along_x else 0.1), y1 - y0 - 0.02, rect.size.y - (0.1 if along_x else 0.0)))
 	var start := rect.position.x if along_x else rect.position.y
 	var y := y0
 	var row := 0
@@ -290,6 +293,29 @@ func _course_wall(side: String, rect: Rect2, y0: float, y1: float, mat: String, 
 			s += bl
 		y += h
 		row += 1
+
+
+## Stone balustrade: plinth, turned balusters, heavy handrail.
+func _balustrade(side: String, rect: Rect2, base: float, floor_y: float, top: float) -> void:
+	var along_x := side == "n" or side == "s"
+	var length := rect.size.x if along_x else rect.size.y
+	var start := rect.position.x if along_x else rect.position.y
+	var c := rect.get_center()
+	_course_wall(side, rect, base, floor_y + 0.18, "stone")
+	var rail_h := 0.16
+	var n := maxi(2, int(length / 0.24))
+	for i in n:
+		var at := start + (i + 0.5) * length / n
+		var p := Vector3(at, 0, c.y) if along_x else Vector3(c.x, 0, at)
+		var h := top - rail_h - (floor_y + 0.18)
+		kit.put("cyl8", "stone", p + Vector3(0, floor_y + 0.18 + h * 0.5, 0), Vector3(0.12, h, 0.12), 0.0, kit.tint(STONE, 0.1))
+		kit.put("sphere", "stone", p + Vector3(0, floor_y + 0.18 + h * 0.45, 0), Vector3(0.17, 0.2, 0.17), 0.0, kit.tint(STONE, 0.1))
+	var m := maxi(1, int(length / 0.8))
+	for i in m:
+		var at := start + (i + 0.5) * length / m
+		var pos := Vector3(at, top - rail_h * 0.5, c.y) if along_x else Vector3(c.x, top - rail_h * 0.5, at)
+		var size := Vector3(length / m - 0.03, rail_h, rect.size.y * 0.8) if along_x else Vector3(rect.size.x * 0.8, rail_h, length / m - 0.03)
+		kit.piece("block", "stone", pos, size, Basis.IDENTITY, kit.tint(STONE, 0.15))
 
 
 ## Piers standing proud of both wall faces every couple of metres.
@@ -404,7 +430,16 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 	var along_x := side == "n" or side == "s"
 	var rng_lo := band.position.x if along_x else band.position.y
 	var rng_hi := band.end.x if along_x else band.end.y
-	var at: float = lerpf(rng_lo, rng_hi, f.t)
+	# Spread features over the wall between any corner towers.
+	var ts := _tower_size(r)
+	for corner: String in r.opts.get("towers", {}):
+		if (along_x and corner[0] == side) or (not along_x and corner[1] == side):
+			var at_lo := (corner[1] == "w") if along_x else (corner[0] == "n")
+			if at_lo:
+				rng_lo += ts
+			else:
+				rng_hi -= ts
+	var at: float = lerpf(rng_lo + 0.5, rng_hi - 0.5, f.t)
 	# Inner face of the wall and the direction into the room.
 	var into: Vector3 = {"n": Vector3(0, 0, 1), "s": Vector3(0, 0, -1), "w": Vector3(1, 0, 0), "e": Vector3(-1, 0, 0)}[side]
 	var face_coord: float
@@ -437,7 +472,7 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 		h = height - y0 - 0.45
 		if h < 0.6:
 			return
-	var panel_mat := "window_glow" if f.get("lit", false) else "stone_dark"
+	var panel_mat := "window_glow" if f.get("lit", false) else "void"
 	if kind == "alcove":
 		panel_mat = "stone_dark"
 	# Recessed panel (slightly into the wall), then a proud frame.
@@ -460,7 +495,7 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 		# Mullion and transom bars.
 		kit.put("box", "iron", panel_c + into * 0.02, Vector3(0.04, h, 0.03) if along_x else Vector3(0.03, h, 0.04))
 		kit.put("box", "iron", panel_c + into * 0.02 + Vector3(0, h * 0.1, 0), Vector3(w, 0.04, 0.03) if along_x else Vector3(0.03, 0.04, w))
-		kit.light(base + into * 0.6 + Vector3(0, y0 + h * 0.6, 0), Color(1.0, 0.55, 0.22), 0.9, 3.0)
+		kit.light(base + into * 0.6 + Vector3(0, y0 + h * 0.6, 0), Color(1.0, 0.6, 0.3), 0.8, 3.0)
 
 
 func _subtract(range_: Vector2, cuts: Array) -> Array:
@@ -595,7 +630,7 @@ func _pillar(r: Layout.Room) -> void:
 
 func _pillar_core(core: Rect2, top: float, front: bool) -> void:
 	# Near courses: dressed blocks; deeper: bigger rougher ones; then plain.
-	_block_box(core, top - 6.0, top, Vector2(0.5, 1.0), 0.36)
+	_block_box(core, top - 6.0, top, Vector2(0.6, 1.3), 0.45)
 	_block_box(core, DEEP_BLOCKS, top - 6.0, Vector2(0.9, 1.6), 0.6)
 	var c := core.get_center()
 	kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + DEEP_BLOCKS) * 0.5, c.y), Vector3(core.size.x, DEEP_BLOCKS - Layout.ABYSS, core.size.y))
@@ -616,10 +651,8 @@ func _pillar_core(core: Rect2, top: float, front: bool) -> void:
 	for x in [core.position.x - 0.1, core.end.x + 0.1]:
 		var z := core.end.y + 0.1
 		kit.span("plank", "wood_dark", Vector3(x, top + 0.1, z), Vector3(x, top - 24.0, z), Vector2(0.24, 0.24))
-		var y := top - 0.5
-		while y > top - 24.0:
-			kit.put("box", "brass", Vector3(x, y, z), Vector3(0.3, 0.1, 0.3))
-			y -= kit.rng.randf_range(1.6, 3.2)
+		for y in [top - 0.5, top - 3.5]:
+			kit.put("box", "iron", Vector3(x, y, z), Vector3(0.3, 0.12, 0.3))
 
 
 func _timber_frame(core: Rect2, y0: float, y1: float) -> void:
@@ -791,10 +824,7 @@ func _truss(l: Layout.Link) -> void:
 	for end in [l.s0 + dirf * 0.2, l.s1 - dirf * 0.2]:
 		for c in [-half, half]:
 			kit.span("plank", "wood_dark", _p(l, end, c, low + 0.3), _p(l, end, c, low - depth), Vector2(0.22, 0.22))
-			var y := low - 0.4
-			while y > low - depth:
-				kit.put("box", "brass", _p(l, end, c, y), Vector3(0.28, 0.08, 0.28))
-				y -= kit.rng.randf_range(1.5, 3.5)
+			kit.put("box", "iron", _p(l, end, c, low - 0.4), Vector3(0.28, 0.1, 0.28))
 	var bay := 3.2
 	var y0 := low
 	var bays := 0

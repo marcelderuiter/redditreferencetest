@@ -16,11 +16,11 @@ static func environment() -> Environment:
 	env.ambient_light_color = AMBIENT
 	env.ambient_light_energy = 0.16
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.0
+	env.tonemap_exposure = 1.12
 	env.tonemap_white = 8.0
 	env.glow_enabled = true
 	env.glow_intensity = 0.8
-	env.glow_bloom = 0.08
+	env.glow_bloom = 0.0
 	env.glow_hdr_threshold = 0.9
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.set_glow_level(0, 0.0)
@@ -56,7 +56,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	var target := Vector3(0.5, 0.0, -3.5)
 	sun.position = target - dir * SUN_DIST
 	sun.look_at_from_position(sun.position, target, Vector3.UP if absf(dir.y) < 0.99 else Vector3.FORWARD)
-	sun.light_color = Color(1.0, 0.9, 0.78)
+	sun.light_color = Color(1.0, 0.9, 0.82)
 	sun.light_energy = 3.2
 	sun.spot_range = SUN_DIST * 2.0
 	sun.spot_attenuation = 0.0
@@ -152,4 +152,4 @@ static func _tower(kit: Kit, p: Vector2, w: float, d: float, top: float) -> void
 	# Tall gothic window slits.
 	for k in 3:
 		var wy := top - kit.rng.randf_range(3.0, 20.0)
-		kit.put("box", "stone_dark", Vector3(p.x + kit.rng.randf_range(-w * 0.3, w * 0.3), wy, p.y + d * 0.5 + 0.05), Vector3(0.9, 3.0, 0.1), 0.0, Color(0.3, 0.3, 0.35))
+		kit.put("box", "void", Vector3(p.x + kit.rng.randf_range(-w * 0.3, w * 0.3), wy, p.y + d * 0.5 + 0.05), Vector3(0.9, 3.0, 0.1))

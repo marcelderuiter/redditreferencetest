@@ -31,11 +31,11 @@ static func build() -> Layout:
 	L.room("chapel", 6.5, -13.0, 12.0, -6.5, 1.6,
 		{walls = {n = 4.0, e = 1.6, s = 0.7, w = 1.6}, towers = {nw = 4.6, ne = 4.6}})
 	L.room("treasury", 12.0, -10.5, 19.5, -2.5, 1.6,
-		{walls = {n = 2.4, e = 1.4, s = 0.8, w = 1.2}, towers = {ne = 3.4, se = 2.2}})
+		{walls = {n = 2.4, e = 1.4, s = 0.9, w = 1.2}, towers = {ne = 3.4, se = 2.2}, balustrade = ["s"]})
 	L.room("orrery", 5.25, -5.3, 13.25, 2.7, 0.8,
 		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}})
 	L.room("eastwing", 15.0, -2.5, 18.5, 2.5, 0.8,
-		{walls = {n = 0.0, e = 1.1, s = 0.7, w = 0.8}, towers = {ne = 2.2}})
+		{walls = {n = 0.0, e = 1.1, s = 0.8, w = 0.8}, towers = {ne = 2.2}, balustrade = ["s"]})
 	L.room("cellar", 5.5, 4.0, 17.5, 12.0, 0.0,
 		{walls = {n = 1.0, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}})
 	L.room("lift", -1.5, 3.5, 2.0, 7.5, 0.0,
