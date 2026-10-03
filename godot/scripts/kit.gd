@@ -146,6 +146,8 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 
 ## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
 func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.6) -> void:
+	if color == Props.CANDLE_LIGHT:
+		energy *= World.tune("candle", 1.0)
 	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 
@@ -349,6 +351,8 @@ func _material(kind: String) -> Material:
 			m.shader = load("res://shaders/stone.gdshader")
 			m.set_shader_parameter("sun_dir", World.SUN_DIR.normalized())
 			m.set_shader_parameter("under_key_dir", World.PIER_KEY_DIR.normalized())
+			m.set_shader_parameter("bump", World.tune("bump", 1.0))
+			m.set_shader_parameter("detail", World.tune("detail", 1.0))
 			if kind == "stone_dark":
 				m.set_shader_parameter("base_color", Color(0.30, 0.27, 0.25))
 			elif kind == "floor":

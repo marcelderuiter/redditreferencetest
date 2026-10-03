@@ -27,7 +27,7 @@ const PIER_RIM_DIR := Vector3(-0.6, -0.35, 0.72)
 
 ## Dev-only overrides for lighting sweeps: TUNE="key=value,..." in the
 ## environment (keys: ambient, exposure, fog_height, fog_hd, sun, sun_spec, rim, fill,
-## pier, pier_rim).
+## pier, pier_rim, candle, bump, detail). scripts/tune.py searches these.
 static func tune(key: String, value: float) -> float:
 	for kv in OS.get_environment("TUNE").split(",", false):
 		var p := kv.split("=")
