@@ -55,14 +55,19 @@ func _physics_process(delta: float) -> void:
 		var move := input.normalized().rotated(yaw) * speed * delta
 		if Input.is_key_pressed(KEY_SHIFT):
 			move *= 1.8
-		var p := Vector2(position.x, position.z)
-		# Try the full move, then each axis, so walls slide instead of stick.
-		for cand in [p + move, p + Vector2(move.x, 0), p + Vector2(0, move.y)]:
-			if grid.can_step(p, cand):
-				position.x = cand.x
-				position.z = cand.y
-				rotation.y = atan2(-move.x, -move.y)
-				break
+		try_move(move)
 	var h := grid.height_at(Vector2(position.x, position.z))
 	if h > -999.0:
 		position.y = lerpf(position.y, h, minf(1.0, delta * 14.0))
+
+
+## Moves on the walk grid; tries the full move, then each axis, so walls slide.
+func try_move(move: Vector2) -> bool:
+	var p := Vector2(position.x, position.z)
+	for cand in [p + move, p + Vector2(move.x, 0), p + Vector2(0, move.y)]:
+		if grid.can_step(p, cand):
+			position.x = cand.x
+			position.z = cand.y
+			rotation.y = atan2(-move.x, -move.y)
+			return true
+	return false

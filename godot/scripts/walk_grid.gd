@@ -137,6 +137,47 @@ func spawn_point() -> Vector2:
 	return centre(best)
 
 
+## Shortest 4-connected path of cell centres from a to b ([] if unreachable).
+func path(a: Vector2, b: Vector2) -> Array:
+	var start := key(a)
+	var goal := key(b)
+	var prev := {start: start}
+	var queue := [start]
+	var head := 0
+	while head < queue.size():
+		var k: Vector2i = queue[head]
+		head += 1
+		if k == goal:
+			break
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = k + d
+			if prev.has(n) or not height.has(n) or abs(height[n] - height[k]) > MAX_STEP:
+				continue
+			prev[n] = k
+			queue.append(n)
+	if not prev.has(goal):
+		return []
+	var out := []
+	var k := goal
+	while k != start:
+		out.push_front(centre(k))
+		k = prev[k]
+	return out
+
+
+## Cell nearest to the centre of a room that is walkable.
+func room_target(name: String) -> Vector2:
+	var room: Dictionary = rooms[name]
+	var target: Vector2 = room.rect.get_center()
+	var best := Vector2.ZERO
+	var best_d := INF
+	for k in height:
+		if owner[k] == name and centre(k).distance_to(target) < best_d:
+			best_d = centre(k).distance_to(target)
+			best = centre(k)
+	return best
+
+
 ## BFS from spawn. Returns {reachable, total, rooms: {name: [reached, total]}, unreached: [owners]}.
 func reachability() -> Dictionary:
 	var start := key(spawn_point())

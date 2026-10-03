@@ -20,7 +20,7 @@ const ROOMS := [
 		"walls": {"n": 3.4, "s": 1.1, "e": 1.1, "w": 2.6}, "tall": ["n"], "floor": "flag"},
 	{"name": "study", "rect": Rect2(-12, -21, 9, 9), "y": 1.2,
 		"walls": {"n": 2.6, "s": 1.0, "e": 1.1, "w": 1.1}, "tall": ["n"], "floor": "cobble"},
-	{"name": "forge", "rect": Rect2(-21.5, -10.5, 8, 10.5), "y": 0.0,
+	{"name": "forge", "rect": Rect2(-20.5, -10.5, 7, 9.5), "y": 0.0,
 		"walls": {"n": 1.8, "s": 1.0, "e": 1.0, "w": 2.8}, "tall": ["w"], "floor": "cobble"},
 	{"name": "chapel", "rect": Rect2(-20, 2, 11, 6), "y": -0.6,
 		"walls": {"n": 1.6, "s": 1.1, "e": 1.0, "w": 2.2}, "tall": [], "floor": "flag"},
@@ -32,15 +32,15 @@ const ROOMS := [
 		"walls": {"n": 4.2, "s": 1.0, "e": 1.8, "w": 1.8}, "tall": ["n"], "floor": "flag"},
 	{"name": "dais", "center": Vector2(9.5, -2), "radius": 4.6, "y": 0.3,
 		"walls": {"rim": 0.8}, "tall": [], "floor": "ring"},
-	{"name": "treasury", "rect": Rect2(15.5, -19.5, 7, 13.5), "y": 0.8,
+	{"name": "treasury", "rect": Rect2(14.8, -19.5, 6.8, 13.5), "y": 0.8,
 		"walls": {"n": 2.8, "s": 1.0, "e": 2.2, "w": 1.6}, "tall": ["n"], "floor": "cobble"},
-	{"name": "landing", "rect": Rect2(16.5, -3.5, 4, 6), "y": 0.3,
+	{"name": "landing", "rect": Rect2(16, -3.5, 4, 6), "y": 0.3,
 		"walls": {"n": 0.9, "s": 0.9, "e": 1.6, "w": 0.9}, "tall": [], "floor": "cobble"},
-	{"name": "lift", "rect": Rect2(0, -0.2, 3.4, 3.2), "y": -0.4,
+	{"name": "lift", "rect": Rect2(-0.3, 0.8, 3.4, 3.2), "y": -0.4,
 		"walls": {"n": 0.0, "s": 0.0, "e": 0.0, "w": 0.0}, "tall": [], "floor": "plate"},
 	{"name": "hall", "rect": Rect2(5.5, 4.2, 14, 8.5), "y": -0.8,
 		"walls": {"n": 1.6, "s": 1.2, "e": 2.0, "w": 1.4}, "tall": [], "floor": "cobble"},
-	{"name": "dock", "rect": Rect2(1, 8.8, 3.5, 3.5), "y": -1.6,
+	{"name": "dock", "rect": Rect2(1.3, 7.3, 3.5, 3.5), "y": -1.6,
 		"walls": {"n": 0.9, "s": 1.0, "e": 0.0, "w": 1.0}, "tall": [], "floor": "cobble"},
 ]
 
@@ -59,11 +59,11 @@ const CONNECTIONS := [
 	{"kind": "bridge", "a": "nave", "b": "dais", "width": 2.6, "at": -3.0},
 	{"kind": "stairs", "a": "shrine", "b": "dais", "width": 2.6, "at": 9.5},
 	{"kind": "bridge", "a": "dais", "b": "landing", "width": 2.4, "at": -1.0},
-	{"kind": "bridge", "a": "landing", "b": "treasury", "width": 2.2, "at": 18.5},
+	{"kind": "bridge", "a": "landing", "b": "treasury", "width": 2.2, "at": 18.0},
 	{"kind": "stairs", "a": "dais", "b": "hall", "width": 2.4, "at": 11.0},
-	{"kind": "bridge", "a": "nave", "b": "lift", "width": 1.6, "at": 1.4},
+	{"kind": "bridge", "a": "nave", "b": "lift", "width": 1.6, "at": 2.4},
 	{"kind": "bridge", "a": "nave", "b": "hall", "width": 2.0, "at": 5.85},
-	{"kind": "stairs", "a": "hall", "b": "dock", "width": 2.0, "at": 10.5},
+	{"kind": "stairs", "a": "hall", "b": "dock", "width": 2.0, "at": 9.05},
 ]
 
 const SPAWN_ROOM := "nave"

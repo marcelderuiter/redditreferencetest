@@ -141,6 +141,8 @@ func _rect_floor(room: Dictionary) -> void:
 		row += 1
 	# Slab body under the tiles, edged with a protruding course of blocks.
 	b.box("box", "stone_dark", Vector3(r.get_center().x, y - 0.1 - FLOOR_T * 0.5, r.get_center().y), Vector3(r.size.x - 0.1, FLOOR_T, r.size.y - 0.1))
+	if room.name == "lift":
+		return
 	_rim_course(Vector2(r.position.x, r.position.y), Vector2(r.end.x, r.position.y), y, Vector2(0, -1))
 	_rim_course(Vector2(r.position.x, r.end.y), Vector2(r.end.x, r.end.y), y, Vector2(0, 1))
 	_rim_course(Vector2(r.position.x, r.position.y), Vector2(r.position.x, r.end.y), y, Vector2(-1, 0))
@@ -374,50 +376,65 @@ func _rim_wall(room: Dictionary) -> void:
 # --- substructure -----------------------------------------------------------
 
 func _tower(room: Dictionary) -> void:
+	# The room is a slab on a few tall pillars: an apron of blocks around the
+	# slab edge, square pillars at the corners (and mid-span on long sides),
+	# timber X-bracing between pillars, open void everywhere else.
 	var r: Rect2 = room.rect
 	var top: float = room.y - 0.1 - FLOOR_T
-	var core := r.grow(-1.3)
-	var h := top - ABYSS
-	b.box("box", "masonry_dark", Vector3(core.get_center().x, top - h * 0.5, core.get_center().y), Vector3(core.size.x, h, core.size.y))
-	b.box("box", "stone_dark", Vector3(r.get_center().x, top - 0.6, r.get_center().y), Vector3(r.size.x - 0.6, 1.2, r.size.y - 0.6))
-	# Piers along every face; arched recesses between them.
-	var line := r.grow(-0.6)
-	var corners := [line.position, Vector2(line.end.x, line.position.y), line.end, Vector2(line.position.x, line.end.y)]
+	b.box("box", "stone_dark", Vector3(r.get_center().x, top - 0.7, r.get_center().y), Vector3(r.size.x - 0.6, 1.4, r.size.y - 0.6))
+	var corners := [r.position, Vector2(r.end.x, r.position.y), r.end, Vector2(r.position.x, r.end.y)]
 	for side in 4:
-		var a: Vector2 = corners[side]
-		var c: Vector2 = corners[(side + 1) % 4]
-		var length := a.distance_to(c)
-		var dir := (c - a) / length
-		var out := Vector2(dir.y, -dir.x)   # corners run clockwise in screen space: outward normal
-		var yaw := -atan2(dir.y, dir.x)
-		var n := maxi(1, int(round(length / 2.6)))
-		for k in n:
-			var p := a + dir * (length * k / n)
-			_pier(Vector3(p.x, top, p.y), top - ABYSS)
-			# Lintel blocks and a dark arch between this pier and the next.
-			var q := a + dir * (length * (k + 0.5) / n)
-			var gap := length / n - 1.1
-			var face := q + out * 0.35
-			for course in 2:
-				b.box("bbox", "stone", Vector3(face.x, top - 0.25 - course * 0.42, face.y), Vector3(gap + 0.1, 0.4, 0.5), yaw, _tint(0.8 - course * 0.1, 0.3))
-			var recess := q - out * 0.65
-			var face_yaw := atan2(out.x, out.y)
-			b.add("arch", "void", Transform3D(Basis(Vector3.UP, face_yaw) * Basis.from_scale(Vector3(gap, 4.5, 1)), Vector3(recess.x, top - 5.4, recess.y)))
-			if rng.randf() < 0.12:
-				b.add("arch", "glow_dim", Transform3D(Basis(Vector3.UP, face_yaw) * Basis.from_scale(Vector3(gap * 0.4, 1.4, 1)), Vector3(recess.x, top - 3.2, recess.y) + Vector3(out.x, 0, out.y) * 0.02), Color(1, 1, 1) * 0.6)
-	# Wooden scaffold beams between piers, lower down.
-	for k in 2:
-		var by := top - 6.0 - k * 5.0
-		for z in [line.position.y, line.end.y]:
-			b.box("box", "wood_dark", Vector3(line.get_center().x, by, z), Vector3(line.size.x, 0.3, 0.3))
-		for x in [line.position.x, line.end.x]:
-			b.box("box", "wood_dark", Vector3(x, by, line.get_center().y), Vector3(0.3, 0.3, line.size.y))
+		_rim_course(corners[side], corners[(side + 1) % 4], top - 0.0, _outward(corners[side], corners[(side + 1) % 4], r))
+	var ps := 2.0 if min(r.size.x, r.size.y) > 6.0 else 1.5
+	var line := r.grow(-ps * 0.5 - 0.15)
+	var xs := _spread(line.position.x, line.end.x, 7.0)
+	var zs := _spread(line.position.y, line.end.y, 7.0)
+	var pillars := []
+	for x in xs:
+		for z in zs:
+			if x in [xs[0], xs[-1]] or z in [zs[0], zs[-1]]:
+				pillars.append(Vector2(x, z))
+	for p in pillars:
+		_pier(Vector3(p.x, top - 1.2, p.y), top - 1.2 - ABYSS, ps)
+	# Bracing along the perimeter between neighbouring pillars.
+	for axis in 2:
+		var along: Array = xs if axis == 0 else zs
+		var others: Array = [zs[0], zs[-1]] if axis == 0 else [xs[0], xs[-1]]
+		for o in others:
+			for k in along.size() - 1:
+				var a3 := Vector3(along[k], 0, o) if axis == 0 else Vector3(o, 0, along[k])
+				var c3 := Vector3(along[k + 1], 0, o) if axis == 0 else Vector3(o, 0, along[k + 1])
+				var d := (c3 - a3).normalized() * ps * 0.5
+				for level in 2:
+					var y0 := top - 1.6 - level * 5.0
+					var y1 := y0 - 4.5
+					_strut(a3 + d + Vector3(0, y0, 0), c3 - d + Vector3(0, y1, 0), 0.22, "wood_dark")
+					_strut(a3 + d + Vector3(0, y1, 0), c3 - d + Vector3(0, y0, 0), 0.22, "wood_dark")
+					_strut(a3 + d + Vector3(0, y0, 0), c3 - d + Vector3(0, y0, 0), 0.26, "wood_dark")
+				# Bronze tie rod just under the apron.
+				_strut(a3 + d + Vector3(0, top - 1.45, 0), c3 - d + Vector3(0, top - 1.45, 0), 0.1, "bronze")
 
 
-func _pier(top: Vector3, h: float) -> void:
-	b.box("box", "masonry", top + Vector3(0, -1.0 - (h - 1.0) * 0.5, 0), Vector3(1.1, h - 1.0, 1.1), 0.0, Color(0.95, 0.92, 0.88))
+static func _spread(a: float, c: float, max_gap: float) -> Array:
+	var n := maxi(1, int(ceil((c - a) / max_gap)))
+	var out := []
+	for k in n + 1:
+		out.append(lerpf(a, c, float(k) / n))
+	return out
+
+
+static func _outward(a: Vector2, c: Vector2, r: Rect2) -> Vector2:
+	var mid := (a + c) * 0.5
+	var d := mid - r.get_center()
+	if abs(d.x) / r.size.x > abs(d.y) / r.size.y:
+		return Vector2(sign(d.x), 0)
+	return Vector2(0, sign(d.y))
+
+
+func _pier(top: Vector3, h: float, w := 1.1) -> void:
+	b.box("box", "masonry", top + Vector3(0, -1.0 - (h - 1.0) * 0.5, 0), Vector3(w, h - 1.0, w), 0.0, Color(0.95, 0.92, 0.88))
 	for k in 10:
-		var s := 1.16 + (0.05 if k % 2 else 0.0)
+		var s := w + 0.06 + (0.05 if k % 2 else 0.0)
 		b.box("bbox", "stone", top + Vector3(0, -0.25 - 0.45 * k, 0), Vector3(s, 0.43, s), rng.randf_range(-0.02, 0.02), _tint(0.85 - k * 0.04, 0.3))
 
 

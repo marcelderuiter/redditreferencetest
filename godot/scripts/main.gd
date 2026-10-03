@@ -38,6 +38,9 @@ func _ready() -> void:
 	if args.has("check"):
 		_check()
 		return
+	if args.has("walktest"):
+		_walk_test()
+		return
 	_setup_viewport()
 	builder.build(world)
 	_setup_environment()
@@ -45,6 +48,8 @@ func _ready() -> void:
 	_setup_post()
 	if args.has("capture") or args.has("topdown"):
 		_capture.call_deferred()
+	elif args.has("inputtest"):
+		_input_test.call_deferred()
 
 
 func _block_props() -> void:
@@ -81,6 +86,33 @@ func _check() -> void:
 		for u in r.unreached + bad:
 			print("FAIL: ", u)
 		get_tree().quit(1)
+
+
+## Drives the player's own movement code from the spawn to every room.
+func _walk_test() -> void:
+	var failed := 0
+	for name in solved.rooms:
+		var p := Player.new()
+		p.grid = grid
+		var sp := grid.spawn_point()
+		p.position = Vector3(sp.x, 0, sp.y)
+		var goal := grid.room_target(name)
+		var route := grid.path(sp, goal)
+		for wp in route:
+			for i in 40:
+				var here := Vector2(p.position.x, p.position.z)
+				var d: Vector2 = wp - here
+				if d.length() < 0.02:
+					break
+				p.try_move(d.limit_length(0.1))
+		var end := Vector2(p.position.x, p.position.z)
+		var ok: bool = grid.owner.get(WalkGrid.key(end), "") == name
+		print("  walk to %-10s %s (%d waypoints)" % [name, "ok" if ok else "FAILED", route.size()])
+		if not ok:
+			failed += 1
+		p.free()
+	print("walk test: %s" % ("OK" if failed == 0 else "%d rooms not reached" % failed))
+	get_tree().quit(1 if failed else 0)
 
 
 func _setup_viewport() -> void:
@@ -193,6 +225,40 @@ func _setup_post() -> void:
 			m.set_shader_parameter("use_lut", true)
 	post.material = m
 	layer.add_child(post)
+
+
+## Feeds real key events: walk forward, follow the player, orbit, then reset.
+func _input_test() -> void:
+	var start := player.position
+	_key(KEY_W, true)
+	for i in 60:
+		await get_tree().physics_frame
+	_key(KEY_W, false)
+	var walked := player.position.distance_to(start)
+	_key(KEY_F, true); _key(KEY_F, false)
+	_key(KEY_Q, true)
+	for i in 20:
+		await get_tree().process_frame
+	_key(KEY_Q, false)
+	await get_tree().process_frame
+	var moved_cam := cam.global_position
+	_key(KEY_R, true); _key(KEY_R, false)
+	await get_tree().process_frame
+	var expect := OrbitCamera.new()
+	expect.default_view = cam.default_view
+	world.add_child(expect)
+	expect.reset_view()
+	var reset_ok := cam.global_position.distance_to(expect.global_position) < 0.01 and moved_cam.distance_to(expect.global_position) > 1.0
+	print("input test: walked %.2f m, camera orbited and reset %s" % [walked, "ok" if reset_ok else "FAILED"])
+	get_tree().quit(0 if walked > 1.0 and reset_ok else 1)
+
+
+func _key(code: Key, pressed: bool) -> void:
+	var e := InputEventKey.new()
+	e.keycode = code
+	e.physical_keycode = code
+	e.pressed = pressed
+	Input.parse_input_event(e)
 
 
 func _capture() -> void:
