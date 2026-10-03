@@ -43,6 +43,9 @@ var meshes := {}
 var materials := {}
 var batches := {}
 var lights: Array[Dictionary] = []
+## While set, pieces and lights are dropped but every random draw still
+## happens (see Build._isolated).
+var muted := false
 
 
 func _init(seed: int) -> void:
@@ -65,6 +68,10 @@ func _init(seed: int) -> void:
 
 
 func add(mesh: String, mat: String, xf: Transform3D, color := Color.WHITE, custom := Color(0, 0, 0, 0)) -> void:
+	if custom.a == 0.0:
+		custom = Color(rng.randf(), rng.randf(), rng.randf(), 1.0)
+	if muted:
+		return
 	var key := mesh + "|" + mat
 	var under := xf.origin.y < UNDER_Y and not NOT_UNDER.has(mat)
 	if under:
@@ -76,8 +83,6 @@ func add(mesh: String, mat: String, xf: Transform3D, color := Color.WHITE, custo
 		b.mat = mat
 		b.under = under
 		batches[key] = b
-	if custom.a == 0.0:
-		custom = Color(rng.randf(), rng.randf(), rng.randf(), 1.0)
 	b.push(xf, color, custom)
 
 
@@ -118,6 +123,8 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 
 ## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
 func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.6) -> void:
+	if muted:
+		return
 	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 

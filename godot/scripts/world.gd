@@ -174,7 +174,9 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 				continue
 			var blocked := false
 			for r in layout.rooms:
-				if r.rect.grow(0.8).has_point(p):
+				# A moved room's old footprint keeps the colonnade as it was.
+				var foot: Rect2 = r.opts.get("was", {}).get("rect", r.rect)
+				if foot.grow(0.8).has_point(p):
 					blocked = true
 					break
 			if blocked:

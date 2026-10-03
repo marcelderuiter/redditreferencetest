@@ -23,10 +23,64 @@ func _init(k: Kit, l: Layout) -> void:
 
 
 func all() -> void:
-	for r in layout.rooms:
-		room(r)
-	for l in layout.links:
-		link(l)
+	var old := _ghost()
+	for i in layout.rooms.size():
+		var r := layout.rooms[i]
+		if old != null and _room_key(r) != _room_key(old.rooms[i]):
+			_isolated(room.bind(old.rooms[i]), room.bind(r))
+		else:
+			room(r)
+	for i in layout.links.size():
+		var l := layout.links[i]
+		if old != null and _link_key(l) != _link_key(old.links[i]):
+			_isolated(link.bind(old.links[i]), link.bind(l))
+		else:
+			link(l)
+
+
+## The same plan with every changed room back on its old footprint and wall
+## heights (opts.was: {rect, walls}) and every changed link back to its old
+## options (Link.was), resolved: the level as it was before those changes.
+## null when nothing changed.
+func _ghost() -> Layout:
+	var moved := layout.rooms.any(func(r: Layout.Room) -> bool: return r.opts.has("was")) \
+		or layout.links.any(func(l: Layout.Link) -> bool: return not l.was.is_empty())
+	if not moved:
+		return null
+	var old := Plan.build()
+	for r in old.rooms:
+		var was: Dictionary = r.opts.get("was", {})
+		r.rect = was.get("rect", r.rect)
+		for side in was.get("walls", {}):
+			r.walls[String(side)] = was.walls[side]
+	for l in old.links:
+		for k in l.was:
+			l.set(k, l.was[k])
+	old.resolve()
+	return old
+
+
+## What a room's or link's geometry (and so its random draws) depends on.
+func _room_key(r: Layout.Room) -> String:
+	return var_to_str([r.rect, r.walls, r.openings.map(func(o: Dictionary) -> Array: return [o.side, o.lo, o.hi])])
+
+
+func _link_key(l: Layout.Link) -> String:
+	return var_to_str([l.s0, l.s1, l.e0, l.e1, l.center, l.width, l.ya, l.yb])
+
+
+## Builds `real`, but leaves the shared random sequence where `was` (the
+## same item before a layout change) would have left it, so moving one room
+## doesn't reshuffle the random detail of everything built after it.
+func _isolated(was: Callable, real: Callable) -> void:
+	var st := kit.rng.state
+	kit.muted = true
+	was.call()
+	kit.muted = false
+	var after := kit.rng.state
+	kit.rng.state = st
+	real.call()
+	kit.rng.state = after
 
 
 # ------------------------------------------------------------------- rooms
@@ -1087,7 +1141,12 @@ func link(l: Layout.Link) -> void:
 		if room.round or not room.has_floor(m):
 			_threshold(l, end[0], end[1])
 	if l.kind != "door" and l.gap() > 0.9:
+		# A short bridge rests on its stringers alone, leaving the shaft under
+		# it clear (its draws are still taken, so nothing else changes).
+		var muted := kit.muted
+		kit.muted = muted or (l.kind == "bridge" and l.gap() < 3.0)
 		_truss(l)
+		kit.muted = muted
 	match l.kind:
 		"door":
 			pass

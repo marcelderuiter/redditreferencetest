@@ -81,7 +81,8 @@ same camera maths the game uses (`scripts/viewmath.py`, notes in
   slender stone piers (and, under a south edge that overhangs a shaft, timber
   posts), or on timber posts alone (the dock), that reach the abyss floor. The lift
   hangs between two girders whose far ends stand on their own. Long spans get
-  posts and trusses, and chains hang from bridges and the lift. Where two rooms
+  posts and trusses (short bridges rest on their stringers), and chains hang
+  from bridges and the lift. Where two rooms
   touch, one wall stands on the shared edge and the other floor runs up to it.
 
 `./run_game.sh --check` resolves the plan, builds the 0.25 m walk grid and

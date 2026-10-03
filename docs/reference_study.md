@@ -41,16 +41,24 @@ table shows the final values, as in `godot/scripts/plan.gd`.
 | store: barrels, statue | 595-720, 150-250 | 2..6.5 | -16.5..-7.5 | 0 |
 | chapel: statue in an alcove, altar, runner | 725-885, 60-280 | 6.5..12 | -13..-6.5 | 1.6 |
 | treasury: gold, chests, lit arches | 885-1060, 100-300 | 12..19.5 | -10.5..-4.6 | 1.6 |
-| orrery: round dais, brass rings, column | 665-890, 285-445 | centre 9.25,-1.3 r 4 | | 0.8 |
+| orrery: round dais, brass rings, column | 665-890, 285-445 | centre 8.75,-1.3 r 3.7 | | 0.8 |
 | east wing | 950-1065, 345-480 | 15..18.5 | -2.6..2.5 | 0.8 |
-| cellar: crates, barrels, candles | 700-1070, 480-690 | 5.5..17.5 | 4..12 | 0 |
+| cellar: crates, barrels, candles | 700-1070, 490-690 | 5.5..17.5 | 5..12 | 0 |
 | lift: hanging plate | 500-595, 455-545 | -1.5..2 | 3.5..7.5 | 0 |
 | low dock on timber posts | 600-700, 590-650 | 0.5..3.5 | 8..10.5 | -1.2 |
 
 The heights come from the visible stairs: about 8 steps at the keep, 4 from
 the chapel down to the orrery, and 4 from the orrery down to the cellar. With
 a 0.2 m rise per step and the hall level as 0, nothing else needs a step. The
-one non-level link is the hall to orrery bridge: it rises 0.8 m over 7 m.
+one non-level link is the hall to orrery bridge: it rises 0.8 m over 7.5 m.
+
+The reference's dais is an octagon about 8.1 m across (X 4.5..12.6 at its
+floor), centred near X 8.6, west of the chapel's axis; its south-east face
+runs from (12.6, 0.4) to (10.0, 2.8). The plan's round dais (r 3.7 at
+X 8.75) keeps its east edge and follows that cut face, which leaves the
+right-hand shaft open. Its stairs meet it on its centre line, so they sit
+0.5 m west of the chapel's axis. The cellar's north wall stands at Z 5, where
+the reference's low wall crosses below that shaft (y ~500-520 px).
 
 ## Shafts
 
@@ -68,8 +76,9 @@ dozen black holes, so the plan keeps these open (image px at floor level):
   2 m gap before the east wing
 - centre, 462-762 x 362-547: under the long hall -> orrery bridge, around the
   lift
-- right, 849-956 x 395-504: under the orrery's south-east rim, between it, the
-  east wing and the cellar
+- right, 849-956 x 395-504 (X 11..14.3, Z -0.5..4.6): under the dais's
+  south-east rim, between it, the east wing and the cellar's north wall; the
+  short bridge to the east wing crosses it with no posts below
 
 ## Connections
 

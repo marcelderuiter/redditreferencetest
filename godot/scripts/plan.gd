@@ -35,12 +35,18 @@ static func build() -> Layout:
 	# A shaft separates the treasury's balustrade from the east wing.
 	L.room("treasury", 12.0, -10.5, 19.5, -4.6, 1.6,
 		{walls = {n = 2.4, e = 1.4, s = 0.9, w = 1.2}, towers = {ne = 3.4, se = 2.2}, balustrade = ["s"], open_s = true})
-	L.room("orrery", 5.25, -5.3, 13.25, 2.7, 0.8,
-		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}})
+	# The dais sits west of the chapel's axis with a radius of 3.7, as the
+	# reference's octagon does: its south-east quarter leaves the right-hand
+	# shaft open down to the cellar. (was: the room before that change, which
+	# keeps the rest of the level's random detail unchanged; see Build._ghost.)
+	L.room("orrery", 5.05, -5.0, 12.45, 2.4, 0.8,
+		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}, was = {rect = Rect2(5.25, -5.3, 8.0, 8.0)}})
 	L.room("eastwing", 15.0, -2.6, 18.5, 2.5, 0.8,
 		{walls = {n = 0.7, e = 1.1, s = 0.8, w = 0.8}, towers = {ne = 2.2}, balustrade = ["s"]})
-	L.room("cellar", 5.5, 4.0, 17.5, 12.0, 0.0,
-		{walls = {n = 0.6, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}})
+	# Its north wall stands back from the dais, so the right-hand shaft drops
+	# past it as in the reference.
+	L.room("cellar", 5.5, 5.0, 17.5, 12.0, 0.0,
+		{walls = {n = 0.5, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}, was = {rect = Rect2(5.5, 4.0, 12.0, 8.0), walls = {n = 0.6}}})
 	L.room("lift", -1.5, 3.5, 2.0, 7.5, 0.0,
 		{wall_t = 0.15, support = "links", theme = "iron", walls = {n = 0.5, e = 0.5, s = 0.5, w = 0.5}})
 	L.room("lowdock", 0.5, 8.0, 3.5, 10.5, -1.2,
@@ -56,10 +62,10 @@ static func build() -> Layout:
 	L.link("walk", "throne", "landing", {width = 1.6, at = 4.6})
 	L.link("bridge", "hall", "orrery", {width = 1.8})
 	L.link("girder", "hall", "store", {width = 1.2, at = -8.75})
-	L.link("stairs", "chapel", "orrery", {width = 2.0})
+	L.link("stairs", "chapel", "orrery", {width = 2.0, at = 8.75, was = {at = 9.25}})
 	L.link("door", "chapel", "treasury")
 	L.link("bridge", "orrery", "eastwing", {at = -1.3})
-	L.link("stairs", "orrery", "cellar", {width = 2.0, at = 9.25})
+	L.link("stairs", "orrery", "cellar", {width = 2.0, at = 8.75, was = {at = 9.25}})
 	L.link("stairs", "eastwing", "cellar", {width = 1.4})
 	L.link("girder", "landing", "lift", {width = 1.4, at = 6.3})
 	L.link("girder", "lift", "cellar", {width = 1.4, at = 6.3})
@@ -148,12 +154,12 @@ static func build() -> Layout:
 	L.prop("statue_big", "chapel", 0.5, 0.1, {robed = true})
 	L.prop("altar", "chapel", 0.5, 0.3)
 	L.prop("statue_knight", "chapel", 0.5, 0.5, {weapon = "sword", kneel = true})
-	L.prop("runner", "chapel", 0.5, 0.8, {size = Vector2(1.4, 2.4)})
+	L.prop("runner", "chapel", 0.39, 0.8, {size = Vector2(1.4, 2.4)})
 	# Four stands in a small room: dim pools, so the statue niche stays the
 	# focus instead of one white-gold bloom.
 	L.prop("candle_stand", "chapel", 0.1, 0.35, {light = 0.6})
 	L.prop("candle_stand", "chapel", 0.9, 0.35, {light = 0.6})
-	L.prop("candle_stand", "chapel", 0.12, 0.95, {light = 0.6})
+	L.prop("candle_stand", "chapel", 0.06, 0.95, {light = 0.6})
 	L.prop("candle_stand", "chapel", 0.88, 0.95, {light = 0.6})
 	L.feature("alcove", "chapel", "n", 0.5)
 	L.feature("banner", "chapel", "w", 0.4)
@@ -179,8 +185,8 @@ static func build() -> Layout:
 	L.prop("orrery", "orrery", 0.5, 0.5, {size = Vector2(1.6, 1.6)})
 	for uv in [Vector2(0.24, 0.24), Vector2(0.76, 0.24), Vector2(0.24, 0.76), Vector2(0.76, 0.76)]:
 		L.prop("candle_stand", "orrery", uv.x, uv.y)
-	L.prop("statuette", "orrery", 0.28, 0.15)
-	L.prop("statuette", "orrery", 0.72, 0.85)
+	L.prop("statuette", "orrery", 0.24, 0.15)
+	L.prop("statuette", "orrery", 0.76, 0.85)
 	# East wing
 	L.prop("statue_knight", "eastwing", 0.55, 0.45, {weapon = "shield"})
 	L.prop("candles", "eastwing", 0.85, 0.15)
@@ -191,7 +197,7 @@ static func build() -> Layout:
 	L.prop("barrel", "cellar", 0.52, 0.45)
 	L.prop("barrel", "cellar", 0.7, 0.42)
 	L.prop("barrel", "cellar", 0.64, 0.55)
-	L.prop("candle_stand", "cellar", 0.36, 0.2)
+	L.prop("candle_stand", "cellar", 0.4, 0.22)
 	L.prop("candle_stand", "cellar", 0.88, 0.62)
 	L.prop("candle_stand", "cellar", 0.25, 0.75)
 	L.prop("table", "cellar", 0.36, 0.86, {items = "papers"})
@@ -201,11 +207,11 @@ static func build() -> Layout:
 	L.prop("statue_knight", "cellar", 0.92, 0.25, {weapon = "shield"})
 	L.prop("candles", "cellar", 0.96, 0.95)
 	L.prop("sacks", "cellar", 0.42, 0.5)
-	L.prop("barrel", "cellar", 0.08, 0.45)
-	L.prop("barrel", "cellar", 0.15, 0.48)
+	L.prop("barrel", "cellar", 0.08, 0.36)
+	L.prop("barrel", "cellar", 0.15, 0.39)
 	L.prop("crates", "cellar", 0.62, 0.1)
-	L.prop("shelf", "cellar", 0.6, 0.04)
-	L.feature("sconce", "cellar", "n", 0.75)
+	L.prop("shelf", "cellar", 0.2, 0.96, {rot = 180.0})
+	L.feature("sconce", "cellar", "n", 0.92)
 	L.feature("sconce", "cellar", "e", 0.5)
 	# Low dock
 	L.prop("barrel", "lowdock", 0.2, 0.3)
