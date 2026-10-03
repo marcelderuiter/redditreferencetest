@@ -68,7 +68,7 @@ static func environment() -> Environment:
 	env.fog_density = 0.0004
 	# Dark height fog below the floors: each deeper plane of piers sinks
 	# further into near-black, so depth (not light) separates them.
-	env.fog_height = tune("fog_height", -7.0)
+	env.fog_height = tune("fog_height", -9)
 	env.fog_height_density = tune("fog_hd", 0.05)
 	env.fog_sky_affect = 0.0
 	return env
@@ -88,7 +88,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	sun.position = target - dir * SUN_DIST
 	sun.look_at_from_position(sun.position, target, Vector3.UP if absf(dir.y) < 0.99 else Vector3.FORWARD)
 	sun.light_color = Color(1.0, 0.9, 0.82)
-	sun.light_energy = tune("sun", 2.4)
+	sun.light_energy = tune("sun", 1.8148)
 	sun.light_specular = tune("sun_spec", 0.25)
 	sun.spot_range = SUN_DIST * 2.0
 	sun.spot_attenuation = 0.0
@@ -102,7 +102,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	var rim := DirectionalLight3D.new()
 	rim.name = "AbyssLight"
 	rim.light_color = ABYSS_LIGHT
-	rim.light_energy = tune("rim", 0.3)
+	rim.light_energy = tune("rim", 0.42)
 	rim.light_specular = 0.3
 	rim.light_cull_mask = Kit.BACKDROP_LAYER
 	rim.shadow_enabled = false
@@ -117,7 +117,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	fill.shadow_enabled = false
 	fill.transform.basis = Basis.looking_at(FILL_DIR.normalized(), Vector3.UP)
 	parent.add_child(fill)
-	for spec in [["PierKey", PIER_KEY, PIER_KEY_DIR, tune("pier", 1.1)], ["PierRim", PIER_RIM, PIER_RIM_DIR, tune("pier_rim", 0.6)]]:
+	for spec in [["PierKey", PIER_KEY, PIER_KEY_DIR, tune("pier", 0.88)], ["PierRim", PIER_RIM, PIER_RIM_DIR, tune("pier_rim", 0.6)]]:
 		var l := DirectionalLight3D.new()
 		l.name = spec[0]
 		l.light_color = spec[1]
