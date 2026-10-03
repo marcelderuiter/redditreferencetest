@@ -35,7 +35,10 @@ xvfb-run -a -s "-screen 0 1920x1080x24" python3 tools/match.py --tag NAME
 The game reads the user arguments that `tools/match.py` passes:
 `--capture=PATH` (render, save the PNG, quit), `--lut=off|auto`,
 `--frames=N` (frames to render before the capture), `--size=WxH`, `--seed=N`
-(prop and masonry variation), `--vignette=F` and
+(prop and masonry variation: every room part, link, prop, wall feature and
+backdrop pier draws from its own random stream, seeded from this seed and
+the item's name, so changing one item never reshuffles the others),
+`--vignette=F` and
 `--cam=yaw,pitch,dist,fov[,fx,fy,fz[,keystone]]`. It also accepts `--check`
 (headless report) and `--topdown` (plan view for verification).
 With `--lut=auto`, `godot/luts/00_reference_match.cube` is applied as a
@@ -111,7 +114,7 @@ connection has floor at both ends and nothing floats:
 | `godot/scripts/plan.gd` | the reference read as a level |
 | `godot/scripts/build.gd` | flagstones, coursed walls, crenellations, towers, pillars, bridges, stairs, girders, trusses, chains |
 | `godot/scripts/props.gd` | prop footprints and builders (statues, candles, gold, orrery, fireplace...) |
-| `godot/scripts/kit.gd` | bevelled unit meshes, materials, MultiMesh batching |
+| `godot/scripts/kit.gd` | bevelled unit meshes, materials, MultiMesh batching, per-item random streams |
 | `godot/scripts/world.gd` | environment, sun, candle lights, abyss backdrop |
 | `godot/scripts/rig.gd` | orbit camera with the shift-lens matched view |
 | `godot/scripts/grade.gd`, `godot/shaders/post.gdshader` | vignette and display-sRGB LUT pass |

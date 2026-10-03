@@ -94,7 +94,6 @@ class Link:
 	var steps := 0
 	var posts := 0               # intermediate supports for long spans
 	var index := 0
-	var was := {}                # options before a layout change (see Build._ghost)
 
 	func gap() -> float:
 		return absf(s1 - s0)

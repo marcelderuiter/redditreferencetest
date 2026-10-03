@@ -56,10 +56,12 @@ static func rotated_half(size: Vector2, rot_deg: float) -> Vector2:
 const CANDLE_LIGHT := Color(1.25, 0.72, 0.25)   # same luminance as the old cream, 2200 K
 
 
+## Each prop draws from its own random stream, keyed by its room, kind and
+## place (Kit.stream).
 static func build_all(kit: Kit, layout: Layout) -> void:
 	for r in layout.rooms:
 		for p in r.props:
-			build(kit, p)
+			kit.stream("prop:%s:%s:%.2f,%.2f" % [r.name, p.kind, p.pos.x, p.pos.y], func() -> void: build(kit, p))
 
 
 static func build(kit: Kit, p: Layout.Prop) -> void:
@@ -343,15 +345,13 @@ static func gold(kit: Kit, xf: Transform3D) -> void:
 	var body := Color(0.45, 0.4, 0.36)
 	_l(kit, xf, "cone", "gold", Vector3(0, 0.22, 0), Vector3(1.5, 0.44, 1.25), Basis.IDENTITY, body)
 	_l(kit, xf, "sphere", "gold", Vector3(0.25, 0.08, 0.1), Vector3(0.9, 0.3, 0.7), Basis.IDENTITY, body)
-	# Lumps that break the cone's outline (outside the level's random sequence).
-	var st := kit.rng.state
+	# Lumps that break the cone's outline.
 	for i in 6:
 		var a := kit.rng.randf() * TAU
 		var d := kit.rng.randf_range(0.35, 0.75)
 		var sz := kit.rng.randf_range(0.3, 0.55)
 		_l(kit, xf, "sphere", "gold", Vector3(cos(a) * d * 0.78, 0.04, sin(a) * d * 0.65), Vector3(sz, sz * 0.4, sz * 0.75),
 			Basis(Vector3.UP, kit.rng.randf() * TAU), body)
-	kit.rng.state = st
 	for i in 320:
 		var a := kit.rng.randf() * TAU
 		var d := sqrt(kit.rng.randf()) * 1.15
@@ -428,9 +428,6 @@ static func shelf(kit: Kit, xf: Transform3D) -> void:
 ## a dark bronze column with gilt bands and armillary rings on a stepped
 ## bronze plinth. The body stays dark; worn bevels and the gilt catch the light.
 static func orrery(kit: Kit, xf: Transform3D) -> void:
-	# Built outside the shared random sequence, which is then left where the
-	# earlier 33-piece orrery left it (99 draws), so nothing else reshuffles.
-	var st := kit.rng.state
 	var rad := 2.85
 	var top := 0.1
 	_l(kit, xf, "disc", "bronze_dark", Vector3(0, top * 0.5 - 0.01, 0), Vector3(rad * 2.0, top + 0.02, rad * 2.0))
@@ -472,9 +469,6 @@ static func orrery(kit: Kit, xf: Transform3D) -> void:
 	_l(kit, xf, "sphere", "gilt", Vector3(0, 3.18, 0), Vector3(0.18, 0.18, 0.18))
 	for k in 3:
 		_l(kit, xf, "ring", "gilt", Vector3(0, 2.57, 0), Vector3(1.1, 0.4, 1.1), Basis(Vector3.UP, k * 1.05) * Basis(Vector3.RIGHT, 1.2))
-	kit.rng.state = st
-	for i in 99:
-		kit.rng.randf()
 
 
 static func _polar(a: float, r: float, y: float) -> Vector3:

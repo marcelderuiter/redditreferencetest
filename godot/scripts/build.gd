@@ -22,90 +22,37 @@ func _init(k: Kit, l: Layout) -> void:
 	layout = l
 
 
+## Every room part, link, wall feature and doorway draws from its own random
+## stream (Kit.stream), keyed by its name: changing one leaves the random
+## detail of everything else as it was.
 func all() -> void:
-	var old := _ghost()
-	for i in layout.rooms.size():
-		var r := layout.rooms[i]
-		if old != null and _room_key(r) != _room_key(old.rooms[i]):
-			_isolated(room.bind(old.rooms[i]), room.bind(r))
-		else:
-			room(r)
-	for i in layout.links.size():
-		var l := layout.links[i]
-		if old != null and _link_key(l) != _link_key(old.links[i]):
-			_isolated(link.bind(old.links[i]), link.bind(l))
-		else:
-			link(l)
-
-
-## The same plan with every changed room back on its old footprint and wall
-## heights (opts.was: {rect, walls}) and every changed link back to its old
-## options (Link.was), resolved: the level as it was before those changes.
-## null when nothing changed.
-func _ghost() -> Layout:
-	var moved := layout.rooms.any(func(r: Layout.Room) -> bool: return r.opts.has("was")) \
-		or layout.links.any(func(l: Layout.Link) -> bool: return not l.was.is_empty())
-	if not moved:
-		return null
-	var old := Plan.build()
-	for r in old.rooms:
-		var was: Dictionary = r.opts.get("was", {})
-		r.rect = was.get("rect", r.rect)
-		for side in was.get("walls", {}):
-			r.walls[String(side)] = was.walls[side]
-	for l in old.links:
-		for k in l.was:
-			l.set(k, l.was[k])
-	old.resolve()
-	return old
-
-
-## What a room's or link's geometry (and so its random draws) depends on.
-func _room_key(r: Layout.Room) -> String:
-	return var_to_str([r.rect, r.walls, r.openings.map(func(o: Dictionary) -> Array: return [o.side, o.lo, o.hi])])
-
-
-func _link_key(l: Layout.Link) -> String:
-	return var_to_str([l.s0, l.s1, l.e0, l.e1, l.center, l.width, l.ya, l.yb])
-
-
-## Builds `real`, but leaves the shared random sequence where `was` (the
-## same item before a layout change) would have left it, so moving one room
-## doesn't reshuffle the random detail of everything built after it.
-func _isolated(was: Callable, real: Callable) -> void:
-	var st := kit.rng.state
-	kit.muted = true
-	was.call()
-	kit.muted = false
-	var after := kit.rng.state
-	kit.rng.state = st
-	real.call()
-	kit.rng.state = after
+	for r in layout.rooms:
+		room(r)
+	for l in layout.links:
+		kit.stream("link:" + l.name, link.bind(l))
 
 
 # ------------------------------------------------------------------- rooms
 
 func room(r: Layout.Room) -> void:
+	var key := "room:" + r.name
 	if r.round:
-		_round_floor(r)
-		_round_wall(r)
+		kit.stream(key + ":floor", _round_floor.bind(r))
+		kit.stream(key + ":wall", _round_wall.bind(r))
 	else:
-		_floor(r)
+		kit.stream(key + ":floor", _floor.bind(r))
 		if r.opts.get("theme", "stone") == "stone":
 			for side in Layout.SIDES:
-				_side_walls(r, side)
+				kit.stream(key + ":wall:" + side, _side_walls.bind(r, side))
 			for corner in r.opts.get("towers", {}):
-				_tower(r, corner, r.opts.towers[corner])
+				kit.stream(key + ":tower:" + corner, _tower.bind(r, corner, r.opts.towers[corner]))
 		else:
-			_rails(r)
+			kit.stream(key + ":rails", _rails.bind(r))
 	match r.support:
 		"pillar":
-			if r.round:
-				_round_pillar(r)
-			else:
-				_pillar(r)
+			kit.stream(key + ":support", (_round_pillar if r.round else _pillar).bind(r))
 		"posts":
-			_posts(r)
+			kit.stream(key + ":support", _posts.bind(r))
 		"links":
 			pass
 
@@ -317,10 +264,10 @@ func _side_walls(r: Layout.Room, side: String) -> void:
 		if height >= 1.0:
 			_pilasters(side, rect, base, r.y + height, notch)
 	for o in doors:
-		_doorway(r, side, band, o, height)
+		kit.stream("door:%s:%s" % [r.name, o.link.name], _doorway.bind(r, side, band, o, height))
 	for f in r.opts.get("features", []):
 		if f.side == side:
-			_feature(r, side, band, f, height)
+			kit.stream("feature:%s:%s:%s:%.3f" % [r.name, side, f.kind, f.t], _feature.bind(r, side, band, f, height))
 
 
 ## A breach in some lower walls without features: the top broken down in
@@ -708,14 +655,11 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 		# Mullion and transom bars.
 		kit.put("box", "iron", panel_c + into * 0.02, Vector3(0.04, h, 0.03) if along_x else Vector3(0.03, h, 0.04))
 		kit.put("box", "iron", panel_c + into * 0.02 + Vector3(0, h * 0.1, 0), Vector3(w, 0.04, 0.03) if along_x else Vector3(0.03, 0.04, w))
-		# Candles on the sill in front of the bars; their draws don't shift the
-		# random sequence the rest of the level is built from.
-		var st := kit.rng.state
+		# Candles on the sill in front of the bars.
 		var sill := base + into * 0.12 + Vector3(0, y0 + 0.01, 0)
 		var across := Vector3(1, 0, 0) if along_x else Vector3(0, 0, 1)
 		Props.candle(kit, sill - across * 0.13, 0.3, 0.04)
 		Props.candle(kit, sill + across * 0.11, 0.18, 0.035)
-		kit.rng.state = st
 		kit.light(sill + into * 0.25 + Vector3(0, 0.45, 0), Props.CANDLE_LIGHT, 1.0, 2.4)
 
 
@@ -964,11 +908,8 @@ func _braces(x0: float, x1: float, z: float, top: float, beam: bool) -> void:
 	if w > 2.0:
 		var lx := (x0 + x1) * 0.5 + kit.jitter(w * 0.2)
 		kit.span("box", "iron", Vector3(lx, yt - 0.1, z + 0.05), Vector3(lx, yt - 0.55, z + 0.05), Vector2(0.03, 0.03))
-		# Hung on a short chain (random state kept so the rest of the build
-		# stays exactly as it was).
-		var st := kit.rng.state
+		# Hung on a short chain.
 		chain(Vector3(lx, yt - 0.12, z + 0.05), Vector3(lx, yt - 0.62, z + 0.05), 0.1)
-		kit.rng.state = st
 		_lantern(Vector3(lx, yt - 0.78, z - 0.3))
 	if w > 2.0 and kit.rng.randf() < 0.5:
 		var y0 := top - 0.6
@@ -1140,13 +1081,10 @@ func link(l: Layout.Link) -> void:
 		var room: Layout.Room = end[2]
 		if room.round or not room.has_floor(m):
 			_threshold(l, end[0], end[1])
-	if l.kind != "door" and l.gap() > 0.9:
-		# A short bridge rests on its stringers alone, leaving the shaft under
-		# it clear (its draws are still taken, so nothing else changes).
-		var muted := kit.muted
-		kit.muted = muted or (l.kind == "bridge" and l.gap() < 3.0)
+	# Posts under every span but a short bridge, which rests on its stringers
+	# alone and leaves the shaft under it clear.
+	if l.kind != "door" and l.gap() > 0.9 and not (l.kind == "bridge" and l.gap() < 3.0):
 		_truss(l)
-		kit.muted = muted
 	match l.kind:
 		"door":
 			pass

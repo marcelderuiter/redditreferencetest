@@ -156,73 +156,85 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 	for r in layout.rooms:
 		bounds = bounds.merge(r.rect)
 	var c := bounds.get_center()
-	var rng := kit.rng
 	var spots: Array[Vector2] = []
 	var tops: Array[float] = []
 	var sizes: Array[Vector2] = []
+	# Every element below draws from its own random stream (Kit.stream_rng):
+	# the colonnade's rows and each row's spacing, each pier, arch and window,
+	# so a change to the level only moves the piers it blocks or frees.
 	# Colonnade: a jittered grid with gaps, never inside a room's footprint.
 	# Piers under the level stay below its timber frames; behind it they
 	# rise higher the further back they stand; beside it they stay low.
 	var step := 7.0
+	var rows := kit.stream_rng("backdrop:rows")
 	var z := bounds.position.y - 90.0
+	var iz := 0
 	while z < bounds.end.y + 4.0:
+		var row := kit.stream_rng("backdrop:row:%d" % iz)
 		var x := c.x - 40.0
+		var ix := 0
 		while x < c.x + 40.0:
-			var p := Vector2(x + rng.randf_range(-2.0, 2.0), z + rng.randf_range(-2.0, 2.0))
-			x += step * rng.randf_range(0.8, 1.25)
-			if rng.randf() < 0.3:
+			var key := "backdrop:pier:%d,%d" % [iz, ix]
+			var g := kit.stream_rng(key)
+			ix += 1
+			var p := Vector2(x + g.randf_range(-2.0, 2.0), z + g.randf_range(-2.0, 2.0))
+			x += step * row.randf_range(0.8, 1.25)
+			if g.randf() < 0.3:
 				continue
 			var blocked := false
 			for r in layout.rooms:
-				# A moved room's old footprint keeps the colonnade as it was.
-				var foot: Rect2 = r.opts.get("was", {}).get("rect", r.rect)
-				if foot.grow(0.8).has_point(p):
+				if r.rect.grow(0.8).has_point(p):
 					blocked = true
 					break
 			if blocked:
 				continue
-			var top := rng.randf_range(-30.0, -10.0)
+			var top := g.randf_range(-30.0, -10.0)
 			if bounds.grow(3.0).has_point(p):
 				# Down the shafts between the rooms: deep enough that the
 				# shafts first drop to darkness, then show far masonry.
-				top = rng.randf_range(-46.0, -24.0)
+				top = g.randf_range(-46.0, -24.0)
 			elif p.y < bounds.position.y - 3.0:
 				var back := clampf((bounds.position.y - p.y) / 80.0, 0.0, 1.0)
-				top = rng.randf_range(-26.0, -6.0) + back * rng.randf_range(0.0, 32.0)
-			var w := rng.randf_range(1.8, 4.0)
-			var d := rng.randf_range(1.8, 4.0)
+				top = g.randf_range(-26.0, -6.0) + back * g.randf_range(0.0, 32.0)
+			var w := g.randf_range(1.8, 4.0)
+			var d := g.randf_range(1.8, 4.0)
 			spots.append(p)
 			tops.append(top)
 			sizes.append(Vector2(w, d))
-			_tower(kit, p, w, d, top)
-		z += step * rng.randf_range(0.85, 1.2)
+			kit.stream(key + ":masonry", _tower.bind(kit, p, w, d, top))
+		z += step * rows.randf_range(0.85, 1.2)
+		iz += 1
 	# Flanking piers just outside the level's sides, seen beside its walls.
-	for side in [-1.0, 1.0]:
+	for side in [-1, 1]:
+		var g := kit.stream_rng("backdrop:flank:%d" % side)
 		var fz := bounds.end.y + 2.0
+		var k := 0
 		while fz > bounds.position.y - 40.0:
-			var fx := bounds.position.x - rng.randf_range(2.5, 7.0) if side < 0.0 else bounds.end.x + rng.randf_range(2.5, 7.0)
+			var fx := bounds.position.x - g.randf_range(2.5, 7.0) if side < 0 else bounds.end.x + g.randf_range(2.5, 7.0)
 			var p := Vector2(fx, fz)
-			var top := rng.randf_range(-24.0, -12.0)
-			var w := rng.randf_range(1.8, 3.5)
-			var d := rng.randf_range(1.8, 3.5)
+			var top := g.randf_range(-24.0, -12.0)
+			var w := g.randf_range(1.8, 3.5)
+			var d := g.randf_range(1.8, 3.5)
 			spots.append(p)
 			tops.append(top)
 			sizes.append(Vector2(w, d))
-			_tower(kit, p, w, d, top)
-			fz -= rng.randf_range(5.0, 9.0)
+			kit.stream("backdrop:flank:%d:%d:masonry" % [side, k], _tower.bind(kit, p, w, d, top))
+			k += 1
+			fz -= g.randf_range(5.0, 9.0)
 	# A far ring of big towers closes the view.
 	for i in 15:
-		var a := TAU * (i + rng.randf_range(-0.3, 0.3)) / 15.0
-		var p := c + Vector2(cos(a) * 119.0, sin(a) * 95.0) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
-		var w := rng.randf_range(5.0, 9.0)
-		var d := rng.randf_range(5.0, 9.0)
-		var top := rng.randf_range(-6.0, 30.0)
+		var g := kit.stream_rng("backdrop:ring:%d" % i)
+		var a := TAU * (i + g.randf_range(-0.3, 0.3)) / 15.0
+		var p := c + Vector2(cos(a) * 119.0, sin(a) * 95.0) + Vector2(g.randf_range(-4, 4), g.randf_range(-4, 4))
+		var w := g.randf_range(5.0, 9.0)
+		var d := g.randf_range(5.0, 9.0)
+		var top := g.randf_range(-6.0, 30.0)
 		if p.y > c.y:
-			top = rng.randf_range(-34.0, -18.0)
+			top = g.randf_range(-34.0, -18.0)
 		spots.append(p)
 		tops.append(top)
 		sizes.append(Vector2(w, d))
-		_tower(kit, p, w, d, top)
+		kit.stream("backdrop:ring:%d:masonry" % i, _tower.bind(kit, p, w, d, top))
 	# Arches bridging neighbouring piers deep down.
 	for i in spots.size():
 		var a := spots[i]
@@ -233,30 +245,42 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 				best_d = a.distance_to(spots[j])
 				best = j
 		if best >= 0 and best_d < 14.0 and i < best:
-			var b := spots[best]
 			# Arches only span between piers that rise above them.
 			var ceiling := minf(tops[i], tops[best]) - 2.0
-			for k in 2:
-				var y := minf(rng.randf_range(-48.0, -14.0), ceiling)
-				kit.span("box", "backdrop", Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector2(1.4, 1.6), Color(0.8, 0.82, 0.9))
+			kit.stream("backdrop:arch:%.1f,%.1f" % [a.x, a.y], _arches.bind(kit, a, spots[best], ceiling))
 	# A few lit windows deep down: warm light grazing the far masonry, each
 	# coming from a window you can see (on the face towards the viewer).
 	var lit := 0
 	for i in spots.size():
-		if lit >= 7 or rng.randf() > 0.12 or spots[i].y > bounds.end.y:
+		var p := spots[i]
+		if lit >= 7 or p.y > bounds.end.y:
+			continue
+		var key := "backdrop:window:%.1f,%.1f" % [p.x, p.y]
+		var g := kit.stream_rng(key)
+		if g.randf() > 0.12:
 			continue
 		lit += 1
-		var p := spots[i]
-		var y := minf(tops[i] - rng.randf_range(2.5, 10.0), rng.randf_range(-40.0, -14.0))
-		var face := Vector3(p.x, y, p.y + sizes[i].y * 0.5 + 0.02)
-		kit.put("box", "window_glow", face, Vector3(0.9, 2.0, 0.06))
-		kit.light(face + Vector3(0, 0, 2.0), Color(1.0, 0.55, 0.25), 5.0, 15.0)
+		var y := minf(tops[i] - g.randf_range(2.5, 10.0), g.randf_range(-40.0, -14.0))
+		kit.stream(key, _window.bind(kit, Vector3(p.x, y, p.y + sizes[i].y * 0.5 + 0.02)))
 	kit.put("box", "backdrop", Vector3(c.x, Layout.ABYSS - 1.0, c.y), Vector3(400.0, 2.0, 400.0), 0.0, Color(0.5, 0.5, 0.6))
 	# The sun (sky key) never reaches below the floors: a shadow-only sheet
 	# just under the lowest slab (extended west, where the light comes from)
 	# leaves the shafts to the lanterns and the haze, so they fall off into
 	# darkness instead of showing sunlit block edges through the gaps.
 	kit.put("box", "occluder", Vector3(c.x - 12.0, -2.4, c.y), Vector3(bounds.size.x + 70.0, 0.4, bounds.size.y + 50.0))
+
+
+## Two arches at random depths between neighbouring piers a and b.
+static func _arches(kit: Kit, a: Vector2, b: Vector2, ceiling: float) -> void:
+	for k in 2:
+		var y := minf(kit.rng.randf_range(-48.0, -14.0), ceiling)
+		kit.span("box", "backdrop", Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector2(1.4, 1.6), Color(0.8, 0.82, 0.9))
+
+
+## A lit window on a far pier's face, and the light it throws.
+static func _window(kit: Kit, face: Vector3) -> void:
+	kit.put("box", "window_glow", face, Vector3(0.9, 2.0, 0.06))
+	kit.light(face + Vector3(0, 0, 2.0), Color(1.0, 0.55, 0.25), 5.0, 15.0)
 
 
 static func _tower(kit: Kit, p: Vector2, w: float, d: float, top: float) -> void:

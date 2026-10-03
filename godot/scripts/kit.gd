@@ -41,18 +41,19 @@ const CHAMFER := {"stone": STONE_CHAMFER, "stone_dark": STONE_CHAMFER, "floor": 
 ## Rubbed, bright edges on the bevelled pieces of the orrery's metals.
 const EDGE_WEAR := {"bronze": 0.9, "bronze_dark": 0.7, "gilt": 0.5}
 
+## The random stream of whatever is being built (see stream()).
 var rng := RandomNumberGenerator.new()
+## The level seed every item's stream is derived from.
+var seed := 0
 var meshes := {}
 var materials := {}
 var batches := {}
 var lights: Array[Dictionary] = []
-## While set, pieces and lights are dropped but every random draw still
-## happens (see Build._isolated).
-var muted := false
 
 
-func _init(seed: int) -> void:
-	rng.seed = seed
+func _init(level_seed: int) -> void:
+	seed = level_seed
+	rng.seed = level_seed
 	meshes.block = bevel_box(0.09)
 	meshes.slab = bevel_box(0.05)
 	meshes.plank = bevel_box(0.12)
@@ -75,8 +76,6 @@ func _init(seed: int) -> void:
 func add(mesh: String, mat: String, xf: Transform3D, color := Color.WHITE, custom := Color(0, 0, 0, 0)) -> void:
 	if custom.a == 0.0:
 		custom = Color(rng.randf(), rng.randf(), rng.randf(), 1.0)
-	if muted:
-		return
 	var key := mesh + "|" + mat
 	var under := xf.origin.y < UNDER_Y and not NOT_UNDER.has(mat)
 	if under:
@@ -115,6 +114,25 @@ func span(mesh: String, mat: String, a: Vector3, b: Vector3, thick: Vector2, col
 	piece(mesh, mat, (a + b) * 0.5, Vector3(thick.x, length, thick.y), basis, color)
 
 
+## Runs `build` on its own random stream, seeded from the level seed and a
+## stable key ("room:hall:wall:n", "link:bridge:hall-orrery", ...): an item's
+## random detail depends only on the seed and its key, never on what was
+## built before it or how much randomness that took. Streams nest; the outer
+## one carries on where it left off.
+func stream(key: String, build: Callable) -> void:
+	var outer := rng
+	rng = stream_rng(key)
+	build.call()
+	rng = outer
+
+
+## A generator of its own for `key`, for code that draws from it directly.
+func stream_rng(key: String) -> RandomNumberGenerator:
+	var g := RandomNumberGenerator.new()
+	g.seed = hash([seed, key])
+	return g
+
+
 func jitter(amount: float) -> float:
 	return rng.randf_range(-amount, amount)
 
@@ -128,8 +146,6 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 
 ## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
 func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.6) -> void:
-	if muted:
-		return
 	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 

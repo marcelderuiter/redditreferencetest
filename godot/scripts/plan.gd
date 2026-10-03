@@ -37,16 +37,15 @@ static func build() -> Layout:
 		{walls = {n = 2.4, e = 1.4, s = 0.9, w = 1.2}, towers = {ne = 3.4, se = 2.2}, balustrade = ["s"], open_s = true})
 	# The dais sits west of the chapel's axis with a radius of 3.7, as the
 	# reference's octagon does: its south-east quarter leaves the right-hand
-	# shaft open down to the cellar. (was: the room before that change, which
-	# keeps the rest of the level's random detail unchanged; see Build._ghost.)
+	# shaft open down to the cellar.
 	L.room("orrery", 5.05, -5.0, 12.45, 2.4, 0.8,
-		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}, was = {rect = Rect2(5.25, -5.3, 8.0, 8.0)}})
+		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}})
 	L.room("eastwing", 15.0, -2.6, 18.5, 2.5, 0.8,
 		{walls = {n = 0.7, e = 1.1, s = 0.8, w = 0.8}, towers = {ne = 2.2}, balustrade = ["s"]})
 	# Its north wall stands back from the dais, so the right-hand shaft drops
 	# past it as in the reference.
 	L.room("cellar", 5.5, 5.0, 17.5, 12.0, 0.0,
-		{walls = {n = 0.5, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}, was = {rect = Rect2(5.5, 4.0, 12.0, 8.0), walls = {n = 0.6}}})
+		{walls = {n = 0.5, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}})
 	L.room("lift", -1.5, 3.5, 2.0, 7.5, 0.0,
 		{wall_t = 0.15, support = "links", theme = "iron", walls = {n = 0.5, e = 0.5, s = 0.5, w = 0.5}})
 	L.room("lowdock", 0.5, 8.0, 3.5, 10.5, -1.2,
@@ -62,10 +61,10 @@ static func build() -> Layout:
 	L.link("walk", "throne", "landing", {width = 1.6, at = 4.6})
 	L.link("bridge", "hall", "orrery", {width = 1.8})
 	L.link("girder", "hall", "store", {width = 1.2, at = -8.75})
-	L.link("stairs", "chapel", "orrery", {width = 2.0, at = 8.75, was = {at = 9.25}})
+	L.link("stairs", "chapel", "orrery", {width = 2.0, at = 8.75})
 	L.link("door", "chapel", "treasury")
 	L.link("bridge", "orrery", "eastwing", {at = -1.3})
-	L.link("stairs", "orrery", "cellar", {width = 2.0, at = 8.75, was = {at = 9.25}})
+	L.link("stairs", "orrery", "cellar", {width = 2.0, at = 8.75})
 	L.link("stairs", "eastwing", "cellar", {width = 1.4})
 	L.link("girder", "landing", "lift", {width = 1.4, at = 6.3})
 	L.link("girder", "lift", "cellar", {width = 1.4, at = 6.3})
