@@ -31,12 +31,15 @@ const UNDER_Y := -2.4
 const NOT_UNDER := ["backdrop", "occluder", "flame", "glow", "ember", "window_glow", "void", "stone_dark"]
 ## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
 const BACKDROP_LAYER := 2
-## Metric chamfer (m) of the bevelled meshes in the stone materials. The stone
-## shader rebuilds the bevel at this size whatever the piece's scale (the unit
+## Metric chamfer (m) of the bevelled meshes, by material. The stone and metal
+## shaders rebuild the bevel at this size whatever the piece's scale (the unit
 ## mesh's chamfer would stretch with it), varying it per corner so blocks read
 ## as worn and chipped rather than machined.
 const STONE_CHAMFER := {"block": 0.085, "slab": 0.045}
-const CHAMFERED := ["stone", "stone_dark", "floor"]
+const CHAMFER := {"stone": STONE_CHAMFER, "stone_dark": STONE_CHAMFER, "floor": STONE_CHAMFER,
+	"bronze": {"block": 0.025}, "bronze_dark": {"block": 0.025}, "gilt": {"block": 0.02}}
+## Rubbed, bright edges on the bevelled pieces of the orrery's metals.
+const EDGE_WEAR := {"bronze": 0.9, "bronze_dark": 0.7, "gilt": 0.5}
 
 var rng := RandomNumberGenerator.new()
 var meshes := {}
@@ -60,9 +63,11 @@ func _init(seed: int) -> void:
 	meshes.spire = _cyl(4, 0.0, 0.7)
 	meshes.sphere = _sphere(12, 8)
 	meshes.ring = _torus(20, 6, 0.42, 0.5)
+	meshes.ring48 = _torus(48, 8, 0.47, 0.5)
+	meshes.disc = _cyl(48, 0.5, 0.5)
 	meshes.link = _torus(8, 4, 0.3, 0.5)
 	meshes.flame = _sphere(8, 6)
-	for m in ["stone", "stone_dark", "floor", "wood", "wood_dark", "iron", "brass", "gold", "cloth",
+	for m in ["stone", "stone_dark", "floor", "wood", "wood_dark", "iron", "brass", "gold", "bronze", "bronze_dark", "gilt", "cloth",
 			"wax", "statue", "flame", "glow", "ember", "window_glow", "paper", "backdrop", "void", "occluder"]:
 		materials[m] = _material(m)
 
@@ -157,14 +162,17 @@ func flush(parent: Node3D) -> int:
 	return total
 
 
-## The batch's material; bevelled stone gets a copy with a metric chamfer.
+## The batch's material; bevelled stone and orrery metal get a copy with a
+## metric chamfer (and the metal rubbed edges).
 func _batch_material(b: Batch) -> Material:
-	if not (CHAMFERED.has(b.mat) and STONE_CHAMFER.has(b.mesh)):
+	if not (CHAMFER.has(b.mat) and CHAMFER[b.mat].has(b.mesh)):
 		return materials[b.mat]
 	var key := b.mat + "@" + b.mesh
 	if not materials.has(key):
 		var m: ShaderMaterial = materials[b.mat].duplicate()
-		m.set_shader_parameter("chamfer", STONE_CHAMFER[b.mesh])
+		m.set_shader_parameter("chamfer", CHAMFER[b.mat][b.mesh])
+		if EDGE_WEAR.has(b.mat):
+			m.set_shader_parameter("edge_wear", EDGE_WEAR[b.mat])
 		materials[key] = m
 	return materials[key]
 
@@ -339,13 +347,17 @@ func _material(kind: String) -> Material:
 			m.shader = load("res://shaders/wood.gdshader")
 			if kind == "wood_dark":
 				m.set_shader_parameter("base_color", Color(0.17, 0.11, 0.07))
-		"iron", "brass", "gold", "statue":
+		"iron", "brass", "gold", "statue", "bronze", "bronze_dark", "gilt":
 			m.shader = load("res://shaders/metal.gdshader")
 			var p: Array = {
 				"iron": [Color(0.24, 0.23, 0.22), 0.5, 0.45, 0.0],
 				"brass": [Color(0.52, 0.39, 0.25), 0.42, 0.8, 0.0],
 				"gold": [Color(0.84, 0.64, 0.34), 0.38, 0.7, 0.0],
 				"statue": [Color(0.36, 0.34, 0.32), 0.42, 0.35, 0.0],
+				# The orrery: dark bronze body, mid bronze plates, gilt rims and spokes.
+				"bronze_dark": [Color(0.2, 0.175, 0.15), 0.62, 0.8, 0.0],
+				"bronze": [Color(0.36, 0.31, 0.25), 0.55, 0.85, 0.0],
+				"gilt": [Color(0.8, 0.67, 0.48), 0.25, 0.95, 0.0],
 			}[kind]
 			m.set_shader_parameter("base_color", p[0])
 			m.set_shader_parameter("roughness_v", p[1])

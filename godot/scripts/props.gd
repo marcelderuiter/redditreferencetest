@@ -423,28 +423,62 @@ static func shelf(kit: Kit, xf: Transform3D) -> void:
 				x += w + (0.1 if kit.rng.randf() < 0.1 else 0.0)
 
 
-## The brass orrery: concentric floor rings, radial bars, and a tall column
-## with armillary rings on top.
+## The orrery: a dark bronze disc over most of the dais with a band of bronze
+## plates between gilt rims, gilt spokes and straps, a toothed inner ring, and
+## a dark bronze column with gilt bands and armillary rings on a stepped
+## bronze plinth. The body stays dark; worn bevels and the gilt catch the light.
 static func orrery(kit: Kit, xf: Transform3D) -> void:
-	for r in [1.25, 2.3, 3.0]:
-		_l(kit, xf, "ring", "brass", Vector3(0, 0.0, 0), Vector3(r * 2.0, 0.18, r * 2.0))
+	# Built outside the shared random sequence, which is then left where the
+	# earlier 33-piece orrery left it (99 draws), so nothing else reshuffles.
+	var st := kit.rng.state
+	var rad := 2.85
+	var top := 0.1
+	_l(kit, xf, "disc", "bronze_dark", Vector3(0, top * 0.5 - 0.01, 0), Vector3(rad * 2.0, top + 0.02, rad * 2.0))
+	# Outer band: bronze plates between gilt rims, with gilt straps at the joints.
+	var band := Vector2(2.2, 2.72)
+	var mid := (band.x + band.y) * 0.5
+	var n := 16
+	for i in n:
+		var a := TAU * (i + 0.5) / n
+		_l(kit, xf, "block", "bronze", _polar(a, mid, top + 0.025), Vector3(band.y - band.x - 0.04, 0.05, TAU * mid / n - 0.07), Basis(Vector3.UP, -a))
+		var aj := TAU * i / n
+		_l(kit, xf, "block", "gilt", _polar(aj, mid, top + 0.035), Vector3(band.y - band.x + 0.08, 0.06, 0.07), Basis(Vector3.UP, -aj))
+	for rr in [rad - 0.03, band.x - 0.01]:
+		_l(kit, xf, "ring48", "gilt", Vector3(0, top + 0.02, 0), Vector3(rr * 2.0, 2.4, rr * 2.0))
+	# Inner field: gilt spokes and a thin ring on the dark disc.
 	for i in 8:
-		var a := TAU * i / 8.0
-		var d := Vector3(cos(a), 0, sin(a))
-		_l(kit, xf, "box", "brass", d * 1.78 + Vector3(0, 0.01, 0), Vector3(1.0, 0.025, 0.05), Basis(Vector3.UP, -a))
-		_l(kit, xf, "block", "brass", d * 2.65 + Vector3(0, 0.02, 0), Vector3(0.24, 0.04, 0.1), Basis(Vector3.UP, -a))
-	_l(kit, xf, "cyl", "stone", Vector3(0, 0.2, 0), Vector3(1.6, 0.4, 1.6))
-	_l(kit, xf, "cyl", "stone", Vector3(0, 0.5, 0), Vector3(1.25, 0.2, 1.25))
-	_l(kit, xf, "cyl", "brass", Vector3(0, 0.62, 0), Vector3(1.1, 0.05, 1.1))
-	_l(kit, xf, "cyl", "iron", Vector3(0, 1.4, 0), Vector3(0.62, 1.6, 0.62))
-	for y in [0.8, 1.3, 1.8]:
-		_l(kit, xf, "cyl", "brass", Vector3(0, y, 0), Vector3(0.7, 0.05, 0.7))
-	_l(kit, xf, "cyl", "iron", Vector3(0, 2.25, 0), Vector3(0.85, 0.12, 0.85))
-	_l(kit, xf, "cyl", "iron", Vector3(0, 2.55, 0), Vector3(0.45, 0.5, 0.45))
-	_l(kit, xf, "cone", "iron", Vector3(0, 2.95, 0), Vector3(0.5, 0.3, 0.5))
-	_l(kit, xf, "sphere", "brass", Vector3(0, 3.18, 0), Vector3(0.18, 0.18, 0.18))
+		var a := TAU * (i + 0.5) / 8.0
+		_l(kit, xf, "block", "gilt", _polar(a, 1.62, top + 0.02), Vector3(1.1, 0.04, 0.07), Basis(Vector3.UP, -a))
+	_l(kit, xf, "ring48", "gilt", Vector3(0, top + 0.01, 0), Vector3(3.3, 1.6, 3.3))
+	# Toothed inner ring.
+	_l(kit, xf, "disc", "bronze_dark", Vector3(0, top + 0.08, 0), Vector3(2.1, 0.16, 2.1))
+	for i in 28:
+		var a := TAU * i / 28.0
+		_l(kit, xf, "block", "bronze", _polar(a, 1.07, top + 0.07), Vector3(0.12, 0.12, 0.1), Basis(Vector3.UP, -a))
+	_l(kit, xf, "ring48", "gilt", Vector3(0, top + 0.16, 0), Vector3(2.08, 1.6, 2.08))
+	# Stepped plinth with gilt edges.
+	_l(kit, xf, "disc", "bronze_dark", Vector3(0, 0.36, 0), Vector3(1.5, 0.2, 1.5))
+	_l(kit, xf, "ring48", "gilt", Vector3(0, 0.46, 0), Vector3(1.52, 1.4, 1.52))
+	_l(kit, xf, "disc", "bronze", Vector3(0, 0.54, 0), Vector3(1.1, 0.16, 1.1))
+	_l(kit, xf, "ring48", "gilt", Vector3(0, 0.62, 0), Vector3(1.12, 1.4, 1.12))
+	# Column, cap and armillary rings.
+	_l(kit, xf, "cyl", "bronze_dark", Vector3(0, 1.41, 0), Vector3(0.62, 1.58, 0.62))
+	for y in [0.9, 1.4, 1.9]:
+		_l(kit, xf, "ring", "gilt", Vector3(0, y, 0), Vector3(0.72, 1.2, 0.72))
+	_l(kit, xf, "cyl", "bronze", Vector3(0, 2.26, 0), Vector3(0.85, 0.12, 0.85))
+	_l(kit, xf, "ring", "gilt", Vector3(0, 2.32, 0), Vector3(0.9, 0.6, 0.9))
+	_l(kit, xf, "cyl", "bronze_dark", Vector3(0, 2.57, 0), Vector3(0.45, 0.5, 0.45))
+	_l(kit, xf, "cone", "bronze_dark", Vector3(0, 2.97, 0), Vector3(0.5, 0.3, 0.5))
+	_l(kit, xf, "sphere", "gilt", Vector3(0, 3.18, 0), Vector3(0.18, 0.18, 0.18))
 	for k in 3:
-		_l(kit, xf, "ring", "brass", Vector3(0, 2.55, 0), Vector3(1.1, 0.12, 1.1), Basis(Vector3.UP, k * 1.05) * Basis(Vector3.RIGHT, 1.2))
+		_l(kit, xf, "ring", "gilt", Vector3(0, 2.57, 0), Vector3(1.1, 0.4, 1.1), Basis(Vector3.UP, k * 1.05) * Basis(Vector3.RIGHT, 1.2))
+	kit.rng.state = st
+	for i in 99:
+		kit.rng.randf()
+
+
+static func _polar(a: float, r: float, y: float) -> Vector3:
+	return Vector3(cos(a) * r, y, sin(a) * r)
 
 
 static func anvil(kit: Kit, xf: Transform3D) -> void:

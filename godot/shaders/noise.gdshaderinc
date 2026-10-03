@@ -51,3 +51,20 @@ vec3 bump_normal(vec3 pos, vec3 n, float h, float k) {
 #define LOCAL_SETUP(lp_out, half_out) \
 	{ vec3 sc_ = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz)); \
 	  lp_out = VERTEX * sc_; half_out = sc_ * 0.5; }
+
+// Rebuilds a vertex of a bevelled unit box (Kit.bevel_box) with a metric
+// chamfer (m) that varies per corner by `chip` (0 = even; at 1 most corners
+// worn, some knocked off deep, a few left sharp). v, n: VERTEX and NORMAL;
+// sc: the instance scale; seed: per-instance random. The multimesh normal
+// matrix is the instance basis (scale included), so n is pre-divided to come
+// out at the bevel's metric angle.
+void metric_bevel(inout vec3 v, inout vec3 n, vec3 sc, vec3 seed, float chamfer, float chip) {
+	vec3 s = sign(v);
+	vec3 inset = step(abs(v), vec3(0.475));
+	float h1 = hash13(s * 5.31 + seed * 97.0);
+	float h2 = hash13(s * 3.17 + seed.zxy * 61.0 + 4.0);
+	float c = chamfer * (mix(1.0, mix(0.4, 1.2, h1) + step(0.82, h2) * 1.2, chip));
+	c = min(c, 0.42 * min(sc.x, min(sc.y, sc.z)));
+	v = s * (0.5 - inset * c / sc);
+	n = n / sc;
+}

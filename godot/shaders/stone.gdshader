@@ -35,16 +35,7 @@ varying vec3 halfsize;
 void vertex() {
 	if (chamfer > 0.0) {
 		vec3 sc = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
-		vec3 s = sign(VERTEX);
-		vec3 inset = step(abs(VERTEX), vec3(0.475));
-		float h1 = hash13(s * 5.31 + INSTANCE_CUSTOM.xyz * 97.0);
-		float h2 = hash13(s * 3.17 + INSTANCE_CUSTOM.zxy * 61.0 + 4.0);
-		float c = chamfer * (mix(1.0, mix(0.4, 1.2, h1) + step(0.82, h2) * 1.2, chip));
-		c = min(c, 0.42 * min(sc.x, min(sc.y, sc.z)));
-		VERTEX = s * (0.5 - inset * c / sc);
-		// The multimesh normal matrix is the instance basis (scale included):
-		// pre-divide so the bevel normals come out at their metric angles.
-		NORMAL = NORMAL / sc;
+		metric_bevel(VERTEX, NORMAL, sc, INSTANCE_CUSTOM.xyz, chamfer, chip);
 	}
 	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 	wnrm = normalize(mat3(MODEL_MATRIX) * NORMAL);
