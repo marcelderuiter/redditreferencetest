@@ -229,3 +229,24 @@ What still differs at close range is mostly geometry and detail:
 
 Development knobs: `TUNE="sun=2,ambient=0.2,fog_height=-7,fog_hd=0.05,exposure=1.1"`
 overrides lighting for sweeps, and `NO_SUN_SHADOW=1` disables the sun's shadow.
+`candle`, `bump` and `detail` scale the candle lights and the stone relief.
+
+## Automated tuning and reuse
+
+- `scripts/tune.py --minutes 110 --bake --commit` runs a coordinate descent over every
+  `World.tune("key", default)` knob. Scoring:
+  - Each step renders at 16 frames and is scored by the graded compare.py score that
+    fit_lut predicts.
+  - A step is kept only when ssim and light_r (from `scripts/shot.py`) hold.
+  - The best values are baked into the source, and each improving pass is committed
+    and pushed.
+  - It needs no supervision. The log is `captures/tune.jsonl`; the result is
+    `captures/tune_best.json` and `captures/tune_best_sheet.png`.
+- `.claude/skills/recreate-reference/SKILL.md` covers the whole method for this image or a
+  new one:
+  - pipeline order and the cheap-first loop;
+  - what compare.py does and does not reward. Its ceiling is 98.7 under match.py's
+    vignette, even for the reference itself.
+  - every pitfall already paid for.
+
+  Claude Code loads the skill automatically, so a future rebuild starts from these lessons.
