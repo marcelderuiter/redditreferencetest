@@ -12,6 +12,9 @@ uniform float wear = 0.4;
 uniform float under_top = -1.6;
 uniform float under_bottom = -8.0;
 uniform float under_min = 0.42;
+// Fine grain and pitting (1 = full); distant masonry uses less so it
+// doesn't sparkle with sub-pixel noise.
+uniform float detail = 1.0;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -29,8 +32,8 @@ void vertex() {
 void fragment() {
 	vec3 p = wpos + inst.xyz * 13.0;
 	float big = fbm3(p * 1.6);
-	float fine = vnoise(p * 8.0);
-	float grain = vnoise(p * 27.0);
+	float fine = mix(0.5, vnoise(p * 8.0), detail);
+	float grain = mix(0.5, vnoise(p * 27.0), detail);
 	vec3 col = base_color * COLOR.rgb;
 	col *= 0.55 + 0.9 * big;
 	col *= 0.72 + 0.56 * grain;

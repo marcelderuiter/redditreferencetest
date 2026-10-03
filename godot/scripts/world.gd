@@ -3,13 +3,17 @@ extends RefCounted
 ## Environment, lights and the abyss backdrop around the level.
 
 const AMBIENT := Color(0.5, 0.48, 0.5)
-const FOG := Color8(29, 31, 42)
+const FOG := Color8(68, 78, 98)   # grey-blue haze that thickens towards the abyss floor
+# Cool light from the abyss on the distant masonry only (cull-masked to the
+# backdrop layer), so far towers read as edge-lit silhouettes in the haze.
+const ABYSS_LIGHT := Color(0.55, 0.65, 1.0)
+const ABYSS_LIGHT_DIR := Vector3(-0.55, -0.65, 0.5)   # travelling down, west, towards the camera
 const SUN_DIR := Vector3(0.15, -0.97, -0.2)   # travelling down, east and north
 const SUN_DIST := 110.0
 
 
 ## Dev-only overrides for lighting sweeps: TUNE="key=value,..." in the
-## environment (keys: ambient, exposure, fog_height, fog_hd, sun).
+## environment (keys: ambient, exposure, fog_height, fog_hd, sun, rim).
 static func tune(key: String, value: float) -> float:
 	for kv in OS.get_environment("TUNE").split(",", false):
 		var p := kv.split("=")
@@ -47,8 +51,11 @@ static func environment() -> Environment:
 	env.fog_light_color = FOG
 	env.fog_light_energy = 1.0
 	env.fog_density = 0.0004
-	env.fog_height = tune("fog_height", -7.0)
-	env.fog_height_density = tune("fog_hd", 0.052)
+	# Height fog only well below the floors: piers and legs stay dark
+	# silhouettes down to ~-30 m, then dissolve into lighter haze, so the
+	# abyss gets brighter with depth instead of being one flat fill.
+	env.fog_height = tune("fog_height", -28.0)
+	env.fog_height_density = tune("fog_hd", 0.05)
 	env.fog_sky_affect = 0.0
 	return env
 
@@ -77,6 +84,15 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	sun.shadow_normal_bias = 1.2
 	sun.shadow_blur = 1.2
 	parent.add_child(sun)
+	var rim := DirectionalLight3D.new()
+	rim.name = "AbyssLight"
+	rim.light_color = ABYSS_LIGHT
+	rim.light_energy = tune("rim", 1.2)
+	rim.light_specular = 0.3
+	rim.light_cull_mask = Kit.BACKDROP_LAYER
+	rim.shadow_enabled = false
+	rim.transform.basis = Basis.looking_at(ABYSS_LIGHT_DIR.normalized(), Vector3.UP)
+	parent.add_child(rim)
 	var out: Array[OmniLight3D] = []
 	for l in lights:
 		var o := OmniLight3D.new()
@@ -93,7 +109,10 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	return out
 
 
-## Distant masonry towers, arches and a few far-off lights in the abyss.
+## Distant masonry towers, arches and a few far-off lights in the abyss: an
+## irregular colonnade of piers filling every view down past the level (its
+## sides, the gaps between its pillars, and the deep space behind it), plus a
+## far ring of big towers, all fading into the height fog.
 static func backdrop(kit: Kit, layout: Layout) -> void:
 	var bounds := layout.rooms[0].rect
 	for r in layout.rooms:
@@ -101,34 +120,68 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 	var c := bounds.get_center()
 	var rng := kit.rng
 	var spots: Array[Vector2] = []
-	# Two loose rings of towers, never inside the level's footprint.
-	for ring in [[34.0, 9], [60.0, 13], [95.0, 15]]:
-		var rad: float = ring[0]
-		var n: int = ring[1]
-		for i in n:
-			var a := TAU * (i + rng.randf_range(-0.3, 0.3)) / n
-			var p := c + Vector2(cos(a) * rad * 1.25, sin(a) * rad) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
-			if bounds.grow(6.0).has_point(p):
-				continue
-			spots.append(p)
-	# A closer ring of pillars that stay below the level, seen through gaps.
-	for i in 22:
-		var a := TAU * (i + rng.randf_range(-0.35, 0.35)) / 22.0
-		var p := c + Vector2(cos(a) * rng.randf_range(20.0, 30.0) * 1.2, sin(a) * rng.randf_range(16.0, 24.0))
-		_tower(kit, p, rng.randf_range(2.5, 5.0), rng.randf_range(2.5, 5.0), rng.randf_range(-24.0, -7.0))
 	var tops: Array[float] = []
 	var sizes: Array[Vector2] = []
-	for p in spots:
-		var w := rng.randf_range(4.0, 9.0)
-		var d := rng.randf_range(4.0, 9.0)
-		sizes.append(Vector2(w, d))
+	# Colonnade: a jittered grid with gaps, never inside a room's footprint.
+	# Piers under the level stay below its timber frames; behind it they
+	# rise higher the further back they stand; beside it they stay low.
+	var step := 7.0
+	var z := bounds.position.y - 90.0
+	while z < bounds.end.y + 4.0:
+		var x := c.x - 40.0
+		while x < c.x + 40.0:
+			var p := Vector2(x + rng.randf_range(-2.0, 2.0), z + rng.randf_range(-2.0, 2.0))
+			x += step * rng.randf_range(0.8, 1.25)
+			if rng.randf() < 0.3:
+				continue
+			var blocked := false
+			for r in layout.rooms:
+				if r.rect.grow(0.8).has_point(p):
+					blocked = true
+					break
+			if blocked:
+				continue
+			var top := rng.randf_range(-30.0, -10.0)
+			if bounds.grow(3.0).has_point(p):
+				top = rng.randf_range(-40.0, -14.0)
+			elif p.y < bounds.position.y - 3.0:
+				var back := clampf((bounds.position.y - p.y) / 80.0, 0.0, 1.0)
+				top = rng.randf_range(-26.0, -6.0) + back * rng.randf_range(0.0, 32.0)
+			var w := rng.randf_range(1.8, 4.0)
+			var d := rng.randf_range(1.8, 4.0)
+			spots.append(p)
+			tops.append(top)
+			sizes.append(Vector2(w, d))
+			_tower(kit, p, w, d, top)
+		z += step * rng.randf_range(0.85, 1.2)
+	# Flanking piers just outside the level's sides, seen beside its walls.
+	for side in [-1.0, 1.0]:
+		var fz := bounds.end.y + 2.0
+		while fz > bounds.position.y - 40.0:
+			var fx := bounds.position.x - rng.randf_range(2.5, 7.0) if side < 0.0 else bounds.end.x + rng.randf_range(2.5, 7.0)
+			var p := Vector2(fx, fz)
+			var top := rng.randf_range(-24.0, -12.0)
+			var w := rng.randf_range(1.8, 3.5)
+			var d := rng.randf_range(1.8, 3.5)
+			spots.append(p)
+			tops.append(top)
+			sizes.append(Vector2(w, d))
+			_tower(kit, p, w, d, top)
+			fz -= rng.randf_range(5.0, 9.0)
+	# A far ring of big towers closes the view.
+	for i in 15:
+		var a := TAU * (i + rng.randf_range(-0.3, 0.3)) / 15.0
+		var p := c + Vector2(cos(a) * 119.0, sin(a) * 95.0) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
+		var w := rng.randf_range(5.0, 9.0)
+		var d := rng.randf_range(5.0, 9.0)
 		var top := rng.randf_range(-6.0, 30.0)
-		# Towers between the camera and the level stay deep in the fog.
-		if p.y > c.y - 4.0 and absf(p.x - c.x) < bounds.size.x * 0.5 + 25.0:
+		if p.y > c.y:
 			top = rng.randf_range(-34.0, -18.0)
+		spots.append(p)
 		tops.append(top)
+		sizes.append(Vector2(w, d))
 		_tower(kit, p, w, d, top)
-	# Arches bridging neighbouring towers deep down.
+	# Arches bridging neighbouring piers deep down.
 	for i in spots.size():
 		var a := spots[i]
 		var best := -1
@@ -137,26 +190,25 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 			if j != i and a.distance_to(spots[j]) < best_d:
 				best_d = a.distance_to(spots[j])
 				best = j
-		if best >= 0 and best_d < 30.0 and i < best:
+		if best >= 0 and best_d < 14.0 and i < best:
 			var b := spots[best]
-			# Arches only span between towers that rise above them.
+			# Arches only span between piers that rise above them.
 			var ceiling := minf(tops[i], tops[best]) - 2.0
 			for k in 2:
-				var y := minf(rng.randf_range(-40.0, -14.0), ceiling)
-				kit.span("box", "backdrop", Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector2(2.4, 2.0), Color(0.8, 0.82, 0.9))
-	# Lit windows on some towers: warm light grazing the far masonry, and a
-	# few glimmers deep in the shaft, each coming from a window you can see.
+				var y := minf(rng.randf_range(-48.0, -14.0), ceiling)
+				kit.span("box", "backdrop", Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector2(1.4, 1.6), Color(0.8, 0.82, 0.9))
+	# A few lit windows deep down: warm light grazing the far masonry, each
+	# coming from a window you can see (on the face towards the viewer).
+	var lit := 0
 	for i in spots.size():
-		if rng.randf() > 0.4:
+		if lit >= 7 or rng.randf() > 0.12 or spots[i].y > bounds.end.y:
 			continue
+		lit += 1
 		var p := spots[i]
-		var to_c := c - p
-		var y := minf(tops[i] - rng.randf_range(2.5, 10.0), rng.randf_range(-30.0, 8.0))
-		var n := Vector3(signf(to_c.x), 0, 0) if absf(to_c.x) > absf(to_c.y) else Vector3(0, 0, signf(to_c.y))
-		var half := sizes[i] * 0.5
-		var face := Vector3(p.x, y, p.y) + n * ((half.x if n.x != 0.0 else half.y) + 0.02)
-		kit.put("box", "window_glow", face, Vector3(0.06, 2.0, 0.9) if n.x != 0.0 else Vector3(0.9, 2.0, 0.06))
-		kit.light(face + n * 2.0, Color(1.0, 0.55, 0.25), 5.0, 15.0)
+		var y := minf(tops[i] - rng.randf_range(2.5, 10.0), rng.randf_range(-40.0, -14.0))
+		var face := Vector3(p.x, y, p.y + sizes[i].y * 0.5 + 0.02)
+		kit.put("box", "window_glow", face, Vector3(0.9, 2.0, 0.06))
+		kit.light(face + Vector3(0, 0, 2.0), Color(1.0, 0.55, 0.25), 5.0, 15.0)
 	kit.put("box", "backdrop", Vector3(c.x, Layout.ABYSS - 1.0, c.y), Vector3(400.0, 2.0, 400.0), 0.0, Color(0.5, 0.5, 0.6))
 
 
@@ -165,7 +217,7 @@ static func _tower(kit: Kit, p: Vector2, w: float, d: float, top: float) -> void
 	kit.put("box", "backdrop", Vector3(p.x, (top + bottom) * 0.5, p.y), Vector3(w, top - bottom, d), 0.0, kit.tint(Color(0.85, 0.85, 0.9), 0.15))
 	# Coarse courses and buttresses so the silhouettes read as masonry.
 	var y := top
-	while y > -40.0:
+	while y > -56.0:
 		kit.put("block", "backdrop", Vector3(p.x, y - 0.4, p.y), Vector3(w + 0.5, 0.8, d + 0.5), 0.0, kit.tint(Color(0.9, 0.9, 0.95), 0.1))
 		y -= kit.rng.randf_range(4.0, 9.0)
 	for s in [-1.0, 1.0]:

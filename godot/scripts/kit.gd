@@ -19,6 +19,8 @@ class Batch:
 
 
 const NO_SHADOW := ["flame", "glow", "ember", "window_glow", "backdrop"]
+## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
+const BACKDROP_LAYER := 2
 
 var rng := RandomNumberGenerator.new()
 var meshes := {}
@@ -115,6 +117,8 @@ func flush(parent: Node3D) -> int:
 		mmi.material_override = materials[b.mat]
 		if NO_SHADOW.has(b.mat):
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		if b.mat == "backdrop":
+			mmi.layers = BACKDROP_LAYER
 		parent.add_child(mmi)
 		total += b.count
 	batches.clear()
@@ -283,7 +287,8 @@ func _material(kind: String) -> Material:
 			elif kind == "backdrop":
 				m.set_shader_parameter("base_color", Color(0.25, 0.24, 0.26))
 				m.set_shader_parameter("under_min", 1.0)
-				m.set_shader_parameter("bump", 0.6)
+				m.set_shader_parameter("bump", 0.4)
+				m.set_shader_parameter("detail", 0.25)
 		"wood", "wood_dark":
 			m.shader = load("res://shaders/wood.gdshader")
 			if kind == "wood_dark":
