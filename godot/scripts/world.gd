@@ -3,20 +3,30 @@ extends RefCounted
 ## Environment, lights and the abyss backdrop around the level.
 
 const AMBIENT := Color(0.5, 0.48, 0.5)
-const FOG := Color8(33, 31, 38)
+const FOG := Color8(29, 31, 42)
 const SUN_DIR := Vector3(0.15, -0.97, -0.2)   # travelling down, east and north
-const SUN_DIST := 180.0
+const SUN_DIST := 110.0
+
+
+## Dev-only overrides for lighting sweeps: TUNE="key=value,..." in the
+## environment (keys: ambient, exposure, fog_height, fog_hd, sun).
+static func tune(key: String, value: float) -> float:
+	for kv in OS.get_environment("TUNE").split(",", false):
+		var p := kv.split("=")
+		if p.size() == 2 and p[0] == key:
+			return p[1].to_float()
+	return value
 
 
 static func environment() -> Environment:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color8(27, 26, 33)
+	env.background_color = Color8(24, 26, 36)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = AMBIENT
-	env.ambient_light_energy = 0.16
+	env.ambient_light_energy = tune("ambient", 0.2)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
-	env.tonemap_exposure = 1.12
+	env.tonemap_exposure = tune("exposure", 1.12)
 	env.tonemap_white = 8.0
 	env.glow_enabled = true
 	env.glow_intensity = 0.8
@@ -37,8 +47,8 @@ static func environment() -> Environment:
 	env.fog_light_color = FOG
 	env.fog_light_energy = 1.0
 	env.fog_density = 0.0004
-	env.fog_height = -6.0
-	env.fog_height_density = 0.055
+	env.fog_height = tune("fog_height", -7.0)
+	env.fog_height_density = tune("fog_hd", 0.052)
 	env.fog_sky_affect = 0.0
 	return env
 
@@ -57,10 +67,10 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	sun.position = target - dir * SUN_DIST
 	sun.look_at_from_position(sun.position, target, Vector3.UP if absf(dir.y) < 0.99 else Vector3.FORWARD)
 	sun.light_color = Color(1.0, 0.9, 0.82)
-	sun.light_energy = 3.2
+	sun.light_energy = tune("sun", 2.0)
 	sun.spot_range = SUN_DIST * 2.0
 	sun.spot_attenuation = 0.0
-	sun.spot_angle = 11.5
+	sun.spot_angle = 18.0
 	sun.spot_angle_attenuation = 0.2
 	sun.shadow_enabled = OS.get_environment("NO_SUN_SHADOW") == ""
 	sun.shadow_bias = 0.04
@@ -106,17 +116,17 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 		var a := TAU * (i + rng.randf_range(-0.35, 0.35)) / 22.0
 		var p := c + Vector2(cos(a) * rng.randf_range(20.0, 30.0) * 1.2, sin(a) * rng.randf_range(16.0, 24.0))
 		_tower(kit, p, rng.randf_range(2.5, 5.0), rng.randf_range(2.5, 5.0), rng.randf_range(-24.0, -7.0))
-	# Warm light grazing a few of the tall far towers, as in the reference.
-	for i in 5:
-		var p := spots[(i * 7) % maxi(spots.size(), 1)] if not spots.is_empty() else c
-		kit.light(Vector3(p.x + 3.0, rng.randf_range(-2.0, 10.0), p.y + 6.0), Color(1.0, 0.55, 0.25), 5.0, 16.0)
+	var tops: Array[float] = []
+	var sizes: Array[Vector2] = []
 	for p in spots:
 		var w := rng.randf_range(4.0, 9.0)
 		var d := rng.randf_range(4.0, 9.0)
+		sizes.append(Vector2(w, d))
 		var top := rng.randf_range(-6.0, 30.0)
 		# Towers between the camera and the level stay deep in the fog.
 		if p.y > c.y - 4.0 and absf(p.x - c.x) < bounds.size.x * 0.5 + 25.0:
 			top = rng.randf_range(-34.0, -18.0)
+		tops.append(top)
 		_tower(kit, p, w, d, top)
 	# Arches bridging neighbouring towers deep down.
 	for i in spots.size():
@@ -129,13 +139,24 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 				best = j
 		if best >= 0 and best_d < 30.0 and i < best:
 			var b := spots[best]
+			# Arches only span between towers that rise above them.
+			var ceiling := minf(tops[i], tops[best]) - 2.0
 			for k in 2:
-				var y := rng.randf_range(-40.0, -14.0)
+				var y := minf(rng.randf_range(-40.0, -14.0), ceiling)
 				kit.span("box", "backdrop", Vector3(a.x, y, a.y), Vector3(b.x, y, b.y), Vector2(2.4, 2.0), Color(0.8, 0.82, 0.9))
-	# Far, faint candle light down in the depths.
-	for i in 6:
-		var p := spots[rng.randi() % spots.size()] if not spots.is_empty() else c
-		kit.light(Vector3(p.x + rng.randf_range(-6, 6), rng.randf_range(-30.0, -12.0), p.y + rng.randf_range(-6, 6)), Color(1.0, 0.5, 0.2), 6.0, 14.0)
+	# Lit windows on some towers: warm light grazing the far masonry, and a
+	# few glimmers deep in the shaft, each coming from a window you can see.
+	for i in spots.size():
+		if rng.randf() > 0.4:
+			continue
+		var p := spots[i]
+		var to_c := c - p
+		var y := minf(tops[i] - rng.randf_range(2.5, 10.0), rng.randf_range(-30.0, 8.0))
+		var n := Vector3(signf(to_c.x), 0, 0) if absf(to_c.x) > absf(to_c.y) else Vector3(0, 0, signf(to_c.y))
+		var half := sizes[i] * 0.5
+		var face := Vector3(p.x, y, p.y) + n * ((half.x if n.x != 0.0 else half.y) + 0.02)
+		kit.put("box", "window_glow", face, Vector3(0.06, 2.0, 0.9) if n.x != 0.0 else Vector3(0.9, 2.0, 0.06))
+		kit.light(face + n * 2.0, Color(1.0, 0.55, 0.25), 5.0, 15.0)
 	kit.put("box", "backdrop", Vector3(c.x, Layout.ABYSS - 1.0, c.y), Vector3(400.0, 2.0, 400.0), 0.0, Color(0.5, 0.5, 0.6))
 
 

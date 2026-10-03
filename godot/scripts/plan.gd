@@ -76,6 +76,7 @@ static func build() -> Layout:
 	L.prop("candle_stand", "gallery", 0.9, 0.2)
 	L.feature("window", "gallery", "n", 0.3)
 	L.feature("window", "gallery", "n", 0.7, {lit = true})
+	L.feature("banner", "gallery", "n", 0.5)
 	# Study
 	L.prop("desk", "study", 0.5, 0.45)
 	L.prop("statue_seated", "study", 0.5, 0.17)
@@ -86,6 +87,9 @@ static func build() -> Layout:
 	L.prop("rug", "study", 0.5, 0.78, {size = Vector2(2.4, 1.6)})
 	L.feature("arch", "study", "n", 0.5)
 	L.feature("door_arch", "study", "s", 0.5)
+	L.feature("banner", "study", "n", 0.15)
+	L.feature("banner", "study", "n", 0.85)
+	L.prop("chest", "study", 0.15, 0.85)
 	# Forge
 	L.prop("fireplace", "forge", 0.62, 0.07)
 	L.prop("table", "forge", 0.6, 0.32, {rot = 0.0, items = "tools"})
@@ -95,6 +99,8 @@ static func build() -> Layout:
 	L.prop("crates", "forge", 0.12, 0.2)
 	L.prop("candles", "forge", 0.9, 0.55)
 	L.prop("anvil", "forge", 0.85, 0.3)
+	L.prop("sacks", "forge", 0.55, 0.9)
+	L.feature("sconce", "forge", "w", 0.4)
 	# Hall
 	L.prop("runner", "hall", 0.45, 0.47, {size = Vector2(1.6, 10.0)})
 	L.prop("statue_knight", "hall", 0.62, 0.38, {weapon = "sword"})
@@ -104,6 +110,10 @@ static func build() -> Layout:
 	for v in [0.12, 0.45, 0.82]:
 		L.prop("candle_stand", "hall", 0.94, v)
 	L.feature("door_arch", "hall", "n", 0.5)
+	L.feature("banner", "hall", "n", 0.15)
+	L.feature("banner", "hall", "n", 0.85)
+	L.feature("sconce", "hall", "w", 0.45)
+	L.feature("sconce", "hall", "e", 0.25)
 	# Landing (the player stands where the reference has a knight)
 	L.prop("candle_stand", "landing", 0.06, 0.6)
 	L.prop("candle_stand", "landing", 0.92, 0.33)
@@ -117,6 +127,8 @@ static func build() -> Layout:
 	L.prop("rubble", "throne", 0.75, 0.85)
 	L.feature("arch", "throne", "n", 0.2)
 	L.feature("arch", "throne", "n", 0.45)
+	L.feature("banner", "throne", "n", 0.75)
+	L.prop("sacks", "throne", 0.1, 0.88)
 	# Store
 	L.prop("barrel", "store", 0.1, 0.42)
 	L.prop("barrel", "store", 0.1, 0.52)
@@ -126,6 +138,8 @@ static func build() -> Layout:
 	L.prop("chest", "store", 0.75, 0.12)
 	L.prop("candles", "store", 0.85, 0.8)
 	L.prop("shelf", "store", 0.6, 0.05)
+	L.prop("sacks", "store", 0.35, 0.8)
+	L.feature("sconce", "store", "e", 0.6)
 	# Chapel
 	L.prop("statue_big", "chapel", 0.5, 0.1, {robed = true})
 	L.prop("altar", "chapel", 0.5, 0.3)
@@ -136,6 +150,8 @@ static func build() -> Layout:
 	L.prop("candle_stand", "chapel", 0.12, 0.95)
 	L.prop("candle_stand", "chapel", 0.88, 0.95)
 	L.feature("alcove", "chapel", "n", 0.5)
+	L.feature("banner", "chapel", "w", 0.4)
+	L.feature("banner", "chapel", "e", 0.4)
 	L.feature("window", "chapel", "n", 0.18, {lit = true})
 	L.feature("window", "chapel", "n", 0.82, {lit = true})
 	# Treasury
@@ -148,6 +164,9 @@ static func build() -> Layout:
 	L.prop("statue_knight", "treasury", 0.62, 0.38, {weapon = "axe"})
 	L.prop("candles", "treasury", 0.95, 0.6)
 	L.prop("candles", "treasury", 0.1, 0.9)
+	L.prop("coins", "treasury", 0.5, 0.55, {size = Vector2(5.0, 4.5)})
+	L.prop("gold", "treasury", 0.88, 0.75)
+	L.prop("chest", "treasury", 0.3, 0.12, {open = true})
 	for t in [0.18, 0.4, 0.62, 0.84]:
 		L.feature("window", "treasury", "n", t, {lit = true})
 	# Orrery
@@ -175,6 +194,13 @@ static func build() -> Layout:
 	L.prop("statuette", "cellar", 0.12, 0.45)
 	L.prop("statue_knight", "cellar", 0.92, 0.25, {weapon = "shield"})
 	L.prop("candles", "cellar", 0.96, 0.95)
+	L.prop("sacks", "cellar", 0.42, 0.5)
+	L.prop("barrel", "cellar", 0.08, 0.45)
+	L.prop("barrel", "cellar", 0.15, 0.48)
+	L.prop("crates", "cellar", 0.62, 0.1)
+	L.prop("shelf", "cellar", 0.6, 0.04)
+	L.feature("sconce", "cellar", "n", 0.75)
+	L.feature("sconce", "cellar", "e", 0.5)
 	# Low dock
 	L.prop("barrel", "lowdock", 0.2, 0.3)
 	L.prop("crates", "lowdock", 0.2, 0.75)

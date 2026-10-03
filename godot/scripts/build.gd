@@ -136,7 +136,7 @@ func _deck(area: Rect2, top: float, theme: String) -> void:
 		for iz in nz:
 			for ix in nx:
 				var c := area.position + Vector2((ix + 0.5) * area.size.x / nx, (iz + 0.5) * area.size.y / nz)
-				kit.put("slab", "iron", Vector3(c.x, top - 0.03, c.y), Vector3(area.size.x / nx - 0.03, 0.06, area.size.y / nz - 0.03), 0.0, kit.tint(Color(1, 1, 1), 0.15))
+				kit.put("slab", "statue", Vector3(c.x, top - 0.03, c.y), Vector3(area.size.x / nx - 0.03, 0.06, area.size.y / nz - 0.03), 0.0, kit.tint(Color(1.25, 0.95, 0.7), 0.15))
 				for q in [Vector2(-1, -1), Vector2(1, -1), Vector2(1, 1), Vector2(-1, 1)]:
 					var rp: Vector2 = c + q * Vector2(area.size.x / nx, area.size.y / nz) * 0.4
 					kit.put("sphere", "brass", Vector3(rp.x, top + 0.005, rp.y), Vector3(0.05, 0.03, 0.05))
@@ -333,7 +333,12 @@ func _pilasters(side: String, rect: Rect2, y0: float, y1: float) -> void:
 		var pos := Vector3(at, (y0 + y1 + 0.2) * 0.5, c.y) if along_x else Vector3(c.x, (y0 + y1 + 0.2) * 0.5, at)
 		var size := Vector3(0.42, y1 - y0 + 0.2, depth + 0.24) if along_x else Vector3(depth + 0.24, y1 - y0 + 0.2, 0.42)
 		_column(pos, size)
-		kit.put("block", "stone", pos + Vector3(0, size.y * 0.5 + 0.08, 0), size * Vector3(1.15, 0.0, 1.1) + Vector3(0, 0.16, 0), kit.jitter(4.0), kit.tint(STONE, 0.2))
+		var cap := pos + Vector3(0, size.y * 0.5 + 0.08, 0)
+		kit.put("block", "stone", cap, size * Vector3(1.15, 0.0, 1.1) + Vector3(0, 0.16, 0), kit.jitter(4.0), kit.tint(STONE, 0.2))
+		if kit.rng.randf() < 0.3:
+			Props.candles(kit, cap + Vector3(0, 0.08, 0), 2 + kit.rng.randi() % 2, 0.1)
+			if kit.rng.randf() < 0.5:
+				kit.light(cap + Vector3(0, 0.5, 0), Props.CANDLE_LIGHT, 1.4, 3.2)
 
 
 ## Merlons along a wall top, with the odd one fallen.
@@ -467,6 +472,20 @@ func _feature(r: Layout.Room, side: String, band: Rect2, f: Dictionary, height: 
 			h = 2.6
 			y0 = 0.35
 		"door_arch":
+			return
+		"banner":
+			var bh := minf(1.6, height - 0.3)
+			var top := base + into * 0.06 + Vector3(0, height - 0.15, 0)
+			kit.put("box", "iron", top, Vector3(0.9, 0.04, 0.05) if along_x else Vector3(0.05, 0.04, 0.9))
+			kit.put("box", "cloth", top - Vector3(0, bh * 0.5, 0) + into * 0.01, Vector3(0.7, bh, 0.02) if along_x else Vector3(0.02, bh, 0.7))
+			kit.put("cone", "brass", top - Vector3(0, bh + 0.08, 0) + into * 0.02, Vector3(0.12, 0.16, 0.12))
+			return
+		"sconce":
+			var sp := base + into * 0.18 + Vector3(0, minf(1.6, height - 0.2), 0)
+			kit.put("block", "iron", sp - into * 0.08, Vector3(0.12, 0.3, 0.12))
+			kit.put("cyl8", "brass", sp + Vector3(0, 0.02, 0), Vector3(0.2, 0.05, 0.2))
+			Props.candle(kit, sp + Vector3(0, 0.04, 0), 0.16, 0.04)
+			kit.light(sp + into * 0.3 + Vector3(0, 0.3, 0), Props.CANDLE_LIGHT, 1.6, 3.5)
 			return
 	if y0 + h + 0.4 > height:
 		h = height - y0 - 0.45
@@ -938,10 +957,8 @@ func _bridge(l: Layout.Link) -> void:
 			kit.span("plank", "wood_dark", _p(l, sp, c, top), _p(l, sp, c, Layout.ABYSS), Vector2(0.26, 0.26))
 			for yy in [top - 0.3, top - 3.0, top - 6.0]:
 				kit.put("box", "brass", _p(l, sp, c, yy), Vector3(0.32, 0.1, 0.32))
-		for k in 3:
-			var y0 := top - k * 3.0
-			kit.span("plank", "wood_dark", _p(l, sp, -half + 0.1, y0), _p(l, sp, half - 0.1, y0 - 3.0), Vector2(0.12, 0.12))
-			kit.span("plank", "wood_dark", _p(l, sp, half - 0.1, y0), _p(l, sp, -half + 0.1, y0 - 3.0), Vector2(0.12, 0.12))
+		kit.span("plank", "wood_dark", _p(l, sp, -half + 0.1, top), _p(l, sp, half - 0.1, top - 2.5), Vector2(0.12, 0.12))
+		kit.span("plank", "wood_dark", _p(l, sp, half - 0.1, top), _p(l, sp, -half + 0.1, top - 2.5), Vector2(0.12, 0.12))
 		# Knee braces from the posts up to the stringers.
 		for d in [-1.2, 1.2]:
 			for c in [-half + 0.1, half - 0.1]:

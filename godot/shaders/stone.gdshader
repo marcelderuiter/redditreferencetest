@@ -11,7 +11,7 @@ uniform float wear = 0.4;
 // can't reach them, so darken with depth (fog lightens them again further down).
 uniform float under_top = -1.6;
 uniform float under_bottom = -8.0;
-uniform float under_min = 0.3;
+uniform float under_min = 0.42;
 
 varying vec3 wpos;
 varying vec3 wnrm;

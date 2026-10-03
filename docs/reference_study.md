@@ -22,25 +22,30 @@ Y up, Z south (towards the camera).
 
 ## Big shapes (image region -> world rectangle, floor height)
 
+Image regions were unprojected with `scripts/viewmath.py` at the floor height
+each room needed. A second pass re-measured anchors (statue bases, wall feet)
+and moved the north-west cluster and the treasury about 1.5 m south. The
+table shows the final values, as in `godot/scripts/plan.gd`.
+
 | area | image px (x, y) | world X | world Z | floor |
 |---|---|---|---|---|
-| keep top: guard statue, two braziers | 85-230, 35-95 | -18.5..-13 | -19.5..-16 | 1.6 |
-| keep stairs going south | 115-185, 95-165 | | | 1.6 -> 0 |
-| rampart walk north of the forge | 85-330, 150-185 | -18.5..-9.5 | -13.5..-11 | 0 |
-| gallery: arched windows | 230-330, 70-150 | -13..-8 | -19.5..-13.5 | 0 |
+| keep top: guard statue, braziers on two towers | 85-230, 35-100 | -18.5..-13 | -17.5..-14.5 | 1.6 |
+| keep stairs going south (8 steps) | 115-185, 95-165 | | -14.5..-12 | 1.6 -> 0 |
+| rampart walk north of the forge | 85-330, 150-185 | -18.5..-9.5 | -12..-9.5 | 0 |
+| gallery: arched windows | 230-330, 60-150 | -13..-8 | -18..-12 | 0 |
 | study: desk, seated statue | 330-490, 90-205 | -8..-2 | -17..-10 | 0 |
-| forge: fireplace, work tables | 50-210, 235-310 | -18.5..-12.5 | -11..-3.5 | 0 |
-| long hall: red runner, knight | 335-470, 250-470 | -7.5..-2.5 | -10..3 | 0 |
-| landing: knight on a round base | 300-470, 470-600 | -8..-2.5 | 3..8.5 | 0 |
+| forge: fireplace, work tables | 50-210, 170-310 | -18.5..-12.5 | -9.5..-3.5 | 0 |
+| long hall: runner, knight | 335-470, 250-470 | -7.5..-2.5 | -10..3 | 0 |
+| landing: knight (the player) | 300-470, 470-600 | -8..-2.5 | 3..8.5 | 0 |
 | throne room: big statue, candles | 15-235, 425-560 | -18.5..-10.5 | 1..7 | 0 |
-| store: barrels, statue | 595-720, 150-250 | 2..7 | -16.5..-8 | 0 |
-| chapel: statue in an arch, altar, runner | 725-885, 110-280 | 7..13 | -13..-6.5 | 1.6 |
-| treasury: gold heaps, chests, lit arches | 885-1060, 170-330 | 13..19.5 | -11..-3.5 | 1.6 |
-| orrery: round dais, brass rings, column | 665-890, 285-445 | centre 8.6,-1.3 r 4 | | 0.8 |
-| east wing | 950-1065, 360-480 | 14.5..18.5 | -3..2.5 | 0.8 |
+| store: barrels, statue | 595-720, 150-250 | 2..6.5 | -16.5..-8 | 0 |
+| chapel: statue in an alcove, altar, runner | 725-885, 60-280 | 6.5..12 | -13..-6.5 | 1.6 |
+| treasury: gold, chests, lit arches | 885-1060, 100-330 | 12..19.5 | -10.5..-2.5 | 1.6 |
+| orrery: round dais, brass rings, column | 665-890, 285-445 | centre 9.25,-1.3 r 4 | | 0.8 |
+| east wing | 950-1065, 360-480 | 15..18.5 | -2.5..2.5 | 0.8 |
 | cellar: crates, barrels, candles | 700-1070, 480-690 | 5.5..17.5 | 4..12 | 0 |
-| lift: hanging plate on chains | 500-595, 455-545 | -1.5..2 | 2.5..7 | 0 |
-| low dock on wooden posts | 600-700, 590-650 | 0.5..3.5 | 8..10.5 | -1.2 |
+| lift: hanging plate | 500-595, 455-545 | -1.5..2 | 3.5..7.5 | 0 |
+| low dock on timber posts | 600-700, 590-650 | 0.5..3.5 | 8..10.5 | -1.2 |
 
 The heights come from the visible stairs: about 8 steps at the keep, 4 from
 the chapel down to the orrery, and 4 from the orrery down to the cellar. With
@@ -57,6 +62,8 @@ one non-level link is the hall to orrery bridge: it rises 0.8 m over 7 m.
 - chapel -> orrery (stairs), chapel -> treasury (door)
 - orrery -> east wing (short bridge), orrery -> cellar (stairs), east wing -> cellar (stairs)
 - landing -> lift -> cellar (iron girder walkway); cellar -> low dock (stairs)
+- the door between study and hall, and the walls between other touching
+  rooms, are single shared walls (see `Layout._share_walls`)
 
 ## Supports
 

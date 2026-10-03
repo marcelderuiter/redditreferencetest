@@ -27,8 +27,10 @@ const FOOTPRINTS := {
 	"rubble": Vector2(1.0, 1.0),
 	"bench": Vector2(1.4, 0.5),
 	"urn": Vector2(0.5, 0.5),
+	"sacks": Vector2(0.9, 0.8),
+	"coins": Vector2(4.0, 4.0),
 }
-const WALK_OVER := ["rug", "runner"]
+const WALK_OVER := ["rug", "runner", "coins"]
 
 
 static func footprint(kind: String) -> Vector2:
@@ -108,6 +110,10 @@ static func build(kit: Kit, p: Layout.Prop) -> void:
 			bench(kit, xf)
 		"urn":
 			urn(kit, xf.origin)
+		"sacks":
+			sacks(kit, xf)
+		"coins":
+			coins(kit, xf, p.opts.get("size", Vector2(3, 3)))
 		_:
 			push_warning("no builder for prop %s" % p.kind)
 
@@ -281,6 +287,20 @@ static func table(kit: Kit, xf: Transform3D, size: Vector3, items: String) -> vo
 			kit.light(cpos + Vector3(0, 0.5, 0), CANDLE_LIGHT, 1.2, 3.0)
 
 
+static func sacks(kit: Kit, xf: Transform3D) -> void:
+	for i in 3:
+		var c := Vector3(kit.jitter(0.25), 0.2, kit.jitter(0.2))
+		_l(kit, xf, "sphere", "cloth", c, Vector3(0.42, 0.45, 0.36), Basis(Vector3.UP, kit.jitter(1.0)), Color(0.7, 0.9, 1.1))
+		_l(kit, xf, "cyl8", "wood_dark", c + Vector3(0, 0.24, 0), Vector3(0.12, 0.08, 0.12))
+
+
+## Coins strewn across a floor area (walkable).
+static func coins(kit: Kit, xf: Transform3D, size: Vector2) -> void:
+	for i in int(size.x * size.y * 22.0):
+		var p := Vector3(kit.rng.randf_range(-0.5, 0.5) * size.x, 0.012, kit.rng.randf_range(-0.5, 0.5) * size.y)
+		_l(kit, xf, "cyl8", "gold", p, Vector3(0.07, 0.012, 0.07), Basis.from_euler(Vector3(kit.jitter(0.3), kit.rng.randf() * TAU, kit.jitter(0.3))), kit.tint(Color(1, 1, 1), 0.2))
+
+
 static func chest(kit: Kit, xf: Transform3D) -> void:
 	_l(kit, xf, "plank", "wood", Vector3(0, 0.25, 0), Vector3(0.95, 0.5, 0.58), Basis.IDENTITY, kit.tint(Color(1, 1, 1), 0.1))
 	_l(kit, xf, "cyl", "wood", Vector3(0, 0.5, 0), Vector3(0.58, 0.95, 0.4), Basis(Vector3.BACK, PI * 0.5))
@@ -349,7 +369,7 @@ static func fireplace(kit: Kit, xf: Transform3D) -> void:
 		_l(kit, xf, "sphere", "ember", Vector3(kit.jitter(0.45), 0.12, kit.jitter(0.2)), Vector3(0.16, 0.08, 0.14))
 	for i in 7:
 		_l(kit, xf, "flame", "flame", Vector3(kit.jitter(0.35), 0.5, kit.jitter(0.12)), Vector3(0.3, 0.8, 0.25) * kit.rng.randf_range(0.6, 1.1))
-	kit.light(xf * Vector3(0, 0.8, 0.8), Color(1.0, 0.42, 0.14), 7.0, 7.5, true)
+	kit.light(xf * Vector3(0, 0.8, 0.8), Color(1.0, 0.42, 0.14), 7.0, 7.5)
 	# Cauldron hanging in the fire.
 	_l(kit, xf, "sphere", "iron", Vector3(0.0, 0.6, 0.05), Vector3(0.5, 0.42, 0.5))
 	_l(kit, xf, "box", "iron", Vector3(0.0, 1.2, 0.05), Vector3(0.03, 0.8, 0.03))

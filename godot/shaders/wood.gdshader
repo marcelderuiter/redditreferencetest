@@ -35,7 +35,7 @@ void fragment() {
 	col *= 0.85 + 0.3 * smoothstep(0.1, 0.9, ring);
 	col *= 0.9 + 0.2 * fine;
 	col *= 1.0 - knot * 0.5;
-	col *= mix(1.0, 0.3, smoothstep(-1.6, -8.0, wy));
+	col *= mix(1.0, 0.42, smoothstep(-1.6, -8.0, wy));
 	ALBEDO = col;
 	ROUGHNESS = roughness_v;
 	SPECULAR = 0.3;

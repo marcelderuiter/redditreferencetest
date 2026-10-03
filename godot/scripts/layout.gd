@@ -586,6 +586,13 @@ func check(g: Grid) -> Dictionary:
 			"ok" if good else "FAIL", l.name, n, t, l.gap(),
 			("%d steps" % l.steps) if l.kind == "stairs" else ("rise %+.1f" % (l.yb - l.ya)),
 			"" if ends == "" else "  " + ends])
+	# What holds everything up: every room stands on masonry or posts that
+	# reach the abyss floor, or hangs between two such rooms on its links.
+	for r in rooms:
+		var how: String = {"pillar": "stone pillar(s) to the abyss floor at %.0f m" % ABYSS,
+			"posts": "timber posts to the abyss floor at %.0f m" % ABYSS,
+			"links": "carried by its girders between supported rooms"}[r.support]
+		lines.append("support %-10s %s" % [r.name, how])
 	for note in notes:
 		lines.append("note " + note)
 	lines.append("reachability: %s" % ("every walkable cell is reachable from the spawn in %s" % spawn_room if ok else "FAILED"))
