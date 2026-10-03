@@ -8,12 +8,12 @@ const FOG := Color8(30, 26, 28)   # near-black haze (the grade cools it slightly
 # layer): just enough for the nearest piers' faces to separate from the dark.
 const ABYSS_LIGHT := Color(0.7, 0.76, 0.95)
 const ABYSS_LIGHT_DIR := Vector3(-0.55, -0.65, 0.5)   # travelling down, west, towards the camera
-const SUN_DIR := Vector3(0.15, -0.97, -0.2)   # travelling down, east and north
+const SUN_DIR := Vector3(0.35, -0.92, 0.12)   # travelling down, east and a little south
 const SUN_DIST := 110.0
 
 
 ## Dev-only overrides for lighting sweeps: TUNE="key=value,..." in the
-## environment (keys: ambient, exposure, fog_height, fog_hd, sun, rim).
+## environment (keys: ambient, exposure, fog_height, fog_hd, sun, sun_spec, rim).
 static func tune(key: String, value: float) -> float:
 	for kv in OS.get_environment("TUNE").split(",", false):
 		var p := kv.split("=")
@@ -28,7 +28,7 @@ static func environment() -> Environment:
 	env.background_color = Color8(24, 26, 36)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = AMBIENT
-	env.ambient_light_energy = tune("ambient", 0.2)
+	env.ambient_light_energy = tune("ambient", 0.1)
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = tune("exposure", 1.12)
 	env.tonemap_white = 8.0
@@ -73,7 +73,8 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	sun.position = target - dir * SUN_DIST
 	sun.look_at_from_position(sun.position, target, Vector3.UP if absf(dir.y) < 0.99 else Vector3.FORWARD)
 	sun.light_color = Color(1.0, 0.9, 0.82)
-	sun.light_energy = tune("sun", 2.0)
+	sun.light_energy = tune("sun", 2.4)
+	sun.light_specular = tune("sun_spec", 0.25)
 	sun.spot_range = SUN_DIST * 2.0
 	sun.spot_attenuation = 0.0
 	sun.spot_angle = 18.0

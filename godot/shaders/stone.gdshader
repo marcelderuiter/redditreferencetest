@@ -11,7 +11,7 @@ uniform float wear = 0.4;
 // can't reach them, so darken with depth (fog lightens them again further down).
 uniform float under_top = -1.6;
 uniform float under_bottom = -8.0;
-uniform float under_min = 0.42;
+uniform float under_min = 0.7;
 // Fine grain and pitting (1 = full); distant masonry uses less so it
 // doesn't sparkle with sub-pixel noise.
 uniform float detail = 1.0;
@@ -49,7 +49,14 @@ void fragment() {
 	vec3 an = abs(normalize(lp / max(halfsize, vec3(0.001))));
 	float edge_d = (an.x > an.y && an.x > an.z) ? min(e.y, e.z) : ((an.y > an.z) ? min(e.x, e.z) : min(e.x, e.y));
 	float rim = 1.0 - smoothstep(0.0, 0.05, edge_d);
-	col *= 1.0 + rim * 0.18 * (0.5 + big);
+	// Upward-facing rims of real blocks (not thin floor tiles) catch the
+	// light, and on side faces the joints sink into shadow, so each block
+	// reads as a lit top over a dark drop.
+	float block = smoothstep(0.06, 0.12, halfsize.y);
+	float top_face = smoothstep(0.6, 0.9, wnrm.y);
+	float side = 1.0 - smoothstep(0.3, 0.7, abs(wnrm.y));
+	col *= 1.0 + rim * (0.18 + 0.3 * top_face * block) * (0.5 + big);
+	col *= 1.0 - 0.38 * (1.0 - smoothstep(0.0, 0.08, edge_d)) * side;
 	float up = clamp(wnrm.y, 0.0, 1.0);
 	col = mix(col, col * vec3(1.1, 1.05, 0.98), up * wear);
 	col *= mix(0.8, 1.0, clamp(wnrm.y + 1.0, 0.0, 1.0));
