@@ -120,7 +120,7 @@ connection has floor at both ends and nothing floats:
 | `godot/scripts/grade.gd`, `godot/shaders/post.gdshader` | vignette and display-sRGB LUT pass |
 | `godot/scripts/player.gd` | the knight on the walk grid |
 | `godot/shaders/*.gdshader` | stone, wood, metal, cloth, wax, flame, glow, void |
-| `scripts/` | dev helpers: `viewmath.py` (project/unproject), `gridsheet.py`, `overlay.py`, `regions.py` |
+| `scripts/` | dev helpers: `shot.py` (fast render + perceptual metrics), `viewmath.py` (project/unproject), `gridsheet.py`, `overlay.py`, `regions.py` |
 
 ## How the view was matched
 
@@ -138,9 +138,15 @@ connection has floor at both ends and nothing floats:
   lift the shadows, so bloom is off, joints and unlit openings are near-black
   recesses, and faces below the floors darken with depth before the abyss fog
   takes them.
-- The LUT (`fit_lut.py`) is only the final grade. The last fitted curve stays
-  within about ±0.04 of identity in lightness
-  (`0.1→0.14 0.3→0.28 0.5→0.51 0.7→0.73`).
+- **Light sculpts the stone.** Ambient is low and the sun is tilted about 22°,
+  so camera-facing walls fall into shade under lit tops. A shadow-only sheet
+  keeps the sun off everything below the floors, and those pieces sit on their
+  own render layer. There a warm key from the upper left and a faint cool rim
+  model the piers, while recesses and bays stay dark. Candle light is ~2200 K
+  amber with steep falloff, so saturated colour lives in light pools. Carpets,
+  gold and brass are muted, and lit windows are dark niches with candles.
+- The LUT (`fit_lut.py`) is only the final grade. The last fitted curve is
+  moderate (`0.1→0.16 0.3→0.30 0.5→0.54 0.7→0.75`).
 
 ## Scores
 
@@ -166,7 +172,11 @@ render with the freshly fitted LUT.
 | m23_clutter | banners, sconces, wall candles, sacks, strewn coins | 69.6 | 84.4 |
 | m25_window_lights | bluish abyss fog, backdrop lights come from visible windows | 71.5 | 84.6 |
 | m26_hall_spires | hall runner and knight moved to the reference's spot, tower pinnacles, neutral fog | 67.8 | 84.6 |
-| m27_hall_spires_bluefog | same with the bluish fog restored (final) | **70.9** | **84.6** |
+| m27_hall_spires_bluefog | same with the bluish fog restored | 70.9 | 84.6 |
+| loop_final | after the perceptual loop below (iterations 1–11) | **55.7** | **89.8** |
+
+The raw score fell in the loop, because the raw render is now darker and
+more sculpted before grading. The graded result is what the game shows.
 
 m18's 86.5 was partly an artefact. The 16-bit shadow banding darkened large
 areas in a way that happened to suit the histogram. Fixing it cost about 2
@@ -174,6 +184,48 @@ graded points and was still the right call. Every run is in `captures/`
 (ignored) as `TAG_raw.png`, `TAG_graded.png` and `TAG_sheet.png`.
 `compare.py` ignores composition, so placement was judged by eye on
 side-by-side sheets with a shared 100 px grid (`scripts/gridsheet.py`).
+
+## Perceptual loop
+
+`compare.py` only compares colour distributions, so the second phase worked
+toward how the image looks. Each iteration rendered the matched view, picked
+the single biggest visible mismatch against the reference, fixed only that,
+and re-rendered. Four specialist agents did this work (perception,
+composition, lighting, materials), and an adversarial critic kept or
+reverted each change. The loop stopped once a change no longer made a
+visible difference at normal size.
+
+`scripts/shot.py NAME --before PREV` renders in about 40 s. It predicts the
+graded image with the LUT match.py would fit, writes side-by-sides
+(`captures/NAME_vs.png`: before | after | reference) and prints spatial
+metrics next to compare.py:
+
+- `ssim`: structure.
+- `light_r`: correlation of heavily blurred lightness, i.e. where light falls.
+- `dE`: low-res colour distance; lower is better.
+
+All three are supporting evidence, not the goal.
+
+| iteration | fix (domain) | ssim | light_r | dE |
+|---|---|---|---|---|
+| it00 | baseline (m27) | 0.264 | 0.748 | 9.01 |
+| it01b | abyss: in-view colonnade fading into near-black haze (lighting) | 0.261 | 0.753 | 8.95 |
+| it02b | sculpting light: low ambient, tilted sun, no sun below the floors (lighting) | 0.246 | 0.754 | 9.16 |
+| it03 | irregular ashlar about 2x larger, true-size chipped bevels, random flagstones (materials) | 0.251 | 0.756 | 9.32 |
+| it04 | shaft lanterns as small warm-white points, neutral fill (lighting) | 0.256 | 0.774 | 8.94 |
+| it05 | open shafts, slender piers with braced bays, new girder walkway (composition) | 0.266 | 0.794 | 8.67 |
+| it06b | piers lit on their own layer, dark recesses and bays (lighting) | 0.265 | 0.790 | 8.70 |
+| it07 | colour from light, not paint: muted carpets, candlelit niches, darker gold (materials) | 0.264 | 0.788 | 8.68 |
+| it07b | amber candle pools, contained chapel light (lighting) | 0.256 | 0.788 | 8.73 |
+| it08 | open the shaft beside the orrery dais (composition) | 0.257 | 0.787 | 8.74 |
+| it09 | orrery as a bronze machine with gilt rims (materials) | 0.257 | 0.790 | 8.68 |
+| it10 | lit far structure in the abyss: not visible, reverted (lighting) | – | – | – |
+| it11 | per-item random streams (cleanup, no visual change) | 0.258 | 0.791 | 8.61 |
+
+What still differs at close range is mostly geometry and detail:
+- The reference's walls are taller and chunkier, with gothic tracery.
+- It has many more statues and props, and its slabs read heavier.
+- Its far background shows faint lit architecture, where ours is plain dark.
 
 Development knobs: `TUNE="sun=2,ambient=0.2,fog_height=-7,fog_hd=0.05,exposure=1.1"`
 overrides lighting for sweeps, and `NO_SUN_SHADOW=1` disables the sun's shadow.
