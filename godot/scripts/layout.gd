@@ -13,7 +13,7 @@ const MAX_STEP := 0.3       # walkable height change between neighbouring cells
 const MAX_SLOPE := 0.125    # bridges and walkways
 const MIN_RUN := 0.25       # stair tread depth limits
 const MAX_RUN := 0.65
-const FREE_SPAN := 6.0      # longer spans get posts down to the abyss floor
+const FREE_SPAN := 8.0      # longer spans get posts down to the abyss floor
 const ABYSS := -70.0        # everything rests on this, eventually
 const EPS := 0.01
 const SIDES := ["n", "e", "s", "w"]
@@ -592,6 +592,8 @@ func check(g: Grid) -> Dictionary:
 		var how: String = {"pillar": "stone pillar(s) to the abyss floor at %.0f m" % ABYSS,
 			"posts": "timber posts to the abyss floor at %.0f m" % ABYSS,
 			"links": "carried by its girders between supported rooms"}[r.support]
+		if r.support == "pillar" and r.opts.get("open_s", false):
+			how += ", timber posts under its open south edge"
 		lines.append("support %-10s %s" % [r.name, how])
 	for note in notes:
 		lines.append("note " + note)

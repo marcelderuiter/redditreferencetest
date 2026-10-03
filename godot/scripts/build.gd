@@ -1,8 +1,9 @@
 class_name Build
 extends RefCounted
 ## Turns a resolved Layout into instanced geometry: flagstone floors, coursed
-## walls with crenellations, corner towers, corbelled pillars that run down
-## into the abyss, and the bridge, stair, walkway and girder for each link.
+## walls with crenellations, corner towers, corbels and slender piers that
+## run down into the abyss (open shafts between them), and the bridge, stair,
+## walkway and girder for each link.
 
 const FLAG := 0.3           # flagstone module (flags are 1-4 modules a side)
 const SLAB := 0.55          # floor slab under the tiles
@@ -537,14 +538,14 @@ func _doorway(r: Layout.Room, side: String, band: Rect2, o: Dictionary, height: 
 
 
 ## A column of stacked blocks (jambs, pilasters).
-func _column(center: Vector3, size: Vector3) -> void:
+func _column(center: Vector3, size: Vector3, mat := "stone") -> void:
 	var y := center.y - size.y * 0.5
 	var top := center.y + size.y * 0.5
 	while y < top - 0.03:
 		var h := minf(COURSE * kit.rng.randf_range(0.7, 1.15), top - y)
 		if top - (y + h) < 0.15:
 			h = top - y
-		kit.piece("block", "stone", Vector3(center.x, y + h * 0.5, center.z), Vector3(size.x + kit.jitter(0.03), h - 0.04, size.z + kit.jitter(0.03)),
+		kit.piece("block", mat, Vector3(center.x, y + h * 0.5, center.z), Vector3(size.x + kit.jitter(0.03), h - 0.04, size.z + kit.jitter(0.03)),
 			Basis(Vector3.UP, kit.jitter(0.03)), kit.tint(STONE_WARM, 0.18))
 		y += h
 
@@ -700,12 +701,12 @@ func _tower(r: Layout.Room, corner: String, height: float) -> void:
 
 
 ## Hollow-looking solid of blocks on all four faces between y0 and y1.
-func _block_box(foot: Rect2, y0: float, y1: float, block_len := Vector2(0.5, 0.95), course := COURSE) -> void:
+func _block_box(foot: Rect2, y0: float, y1: float, block_len := Vector2(0.5, 0.95), course := COURSE, mat := "stone") -> void:
 	var t := 0.3
-	_course_wall("n", Rect2(foot.position.x, foot.position.y, foot.size.x, t), y0, y1, "stone", block_len, course)
-	_course_wall("s", Rect2(foot.position.x, foot.end.y - t, foot.size.x, t), y0, y1, "stone", block_len, course)
-	_course_wall("w", Rect2(foot.position.x, foot.position.y + t, t, foot.size.y - 2 * t), y0, y1, "stone", block_len, course)
-	_course_wall("e", Rect2(foot.end.x - t, foot.position.y + t, t, foot.size.y - 2 * t), y0, y1, "stone", block_len, course)
+	_course_wall("n", Rect2(foot.position.x, foot.position.y, foot.size.x, t), y0, y1, mat, block_len, course)
+	_course_wall("s", Rect2(foot.position.x, foot.end.y - t, foot.size.x, t), y0, y1, mat, block_len, course)
+	_course_wall("w", Rect2(foot.position.x, foot.position.y + t, t, foot.size.y - 2 * t), y0, y1, mat, block_len, course)
+	_course_wall("e", Rect2(foot.end.x - t, foot.position.y + t, t, foot.size.y - 2 * t), y0, y1, mat, block_len, course)
 
 
 ## Iron or timber railing around a platform (lift, dock), open at links.
@@ -759,84 +760,167 @@ func chain(a: Vector3, b: Vector3, size := 0.11) -> void:
 
 # ----------------------------------------------------------------- pillars
 
-## Corbel steps under the slab, then one or more pillars of ever larger
-## courses down to the abyss floor, with timber between them.
+## Corbel steps under the slab, then a few slender masonry piers (the
+## corners, and every five metres or so along a front) running down into the
+## abyss, so the shafts between the rooms stay open down to the dark. A room
+## whose south edge overhangs a shaft (opts.open_s) stands there on timber
+## posts instead. Narrow rooms carry their back rows on one central pier.
 func _pillar(r: Layout.Room) -> void:
-	var top := r.y - SLAB
+	var slab := r.y - SLAB
+	var top := slab
 	var foot := r.rect
+	var open_s: bool = r.opts.get("open_s", false)
 	for step in 3:
-		var f := foot.grow(-0.22 * (step + 1))
+		var g := -0.22 * (step + 1)
+		var f := foot.grow(g)
+		if open_s:
+			# Its south edge rests on a beam: the corbels step back from it,
+			# leaving a thin rim over the shaft.
+			f = foot.grow_individual(g, g, g, -1.0 - 0.5 * step)
 		_block_box(f, top - 0.32, top, Vector2(0.7, 1.3), 0.32)
 		top -= 0.32
-	var area := foot.grow(-0.8)
-	var nx := maxi(1, roundi(area.size.x / 4.8))
-	var nz := maxi(1, roundi(area.size.y / 4.8))
-	var cw := area.size.x / nx
-	var cd := area.size.y / nz
-	var pw := minf(cw - 0.6, 3.6) if nx > 1 else minf(cw, 4.2)
-	var pd := minf(cd - 0.6, 3.6) if nz > 1 else minf(cd, 4.2)
-	var cores: Array[Rect2] = []
-	for iz in nz:
-		for ix in nx:
-			var c := area.position + Vector2((ix + 0.5) * cw, (iz + 0.5) * cd)
-			var core := Rect2(c - Vector2(pw, pd) * 0.5, Vector2(pw, pd))
-			cores.append(core)
-			_pillar_core(core, top, iz == nz - 1)
-	# Heavy beams under the slab joining the pillar heads, on the front row.
-	var front := cores.slice(cores.size() - nx)
-	for i in front.size() - 1:
-		var a: Rect2 = front[i]
-		var b: Rect2 = front[i + 1]
-		var z := a.end.y - 0.15
-		kit.span("plank", "wood_dark", Vector3(a.end.x - 0.1, top - 0.2, z), Vector3(b.position.x + 0.1, top - 0.2, z), Vector2(0.34, 0.3))
-		_timber_frame(Rect2(a.end.x, a.position.y, b.position.x - a.end.x, a.size.y), top - 0.4, top - 7.0)
-
-
-func _pillar_core(core: Rect2, top: float, front: bool) -> void:
-	# Near courses: dressed blocks; deeper: bigger rougher ones; then plain.
-	_block_box(core, top - 6.0, top, Vector2(1.0, 1.9), 0.68)
-	_block_box(core, DEEP_BLOCKS, top - 6.0, Vector2(1.1, 2.0), 0.7)
-	var c := core.get_center()
-	kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + DEEP_BLOCKS) * 0.5, c.y), Vector3(core.size.x, DEEP_BLOCKS - Layout.ABYSS, core.size.y))
-	if not front:
+	var base := foot.grow(-0.66)
+	var front := _is_front(r)
+	var p := clampf(minf(base.size.x, base.size.y) * 0.36, 1.3, 2.1)
+	var pb := maxf(1.2, p * 0.85)
+	var south := base.end.y
+	if open_s:
+		var zp := foot.end.y - 0.45
+		var xs := _stations(foot.position.x + 0.45, foot.end.x - 0.45, 5.2)
+		for x in xs:
+			_post(Vector2(x, zp), slab)
+		kit.span("plank", "wood_dark", Vector3(xs[0] - 0.25, slab - 0.17, zp), Vector3(xs[-1] + 0.25, slab - 0.17, zp), Vector2(0.3, 0.34))
+		for i in range(1, xs.size()):
+			_braces(xs[i - 1] + 0.15, xs[i] - 0.15, zp, slab, false)
+	else:
+		var xs := _stations(base.position.x + p * 0.5, base.end.x - p * 0.5, 5.2)
+		if xs.size() == 2 and xs[1] - xs[0] < p:
+			xs = [base.get_center().x]
+		for i in xs.size():
+			var pf := Rect2(xs[i] - p * 0.5, base.end.y - p, p, p)
+			_pier(pf, top)
+			if front and i % 2 == 0:
+				_lantern(Vector3(xs[i] + kit.jitter(0.12), top - 1.7, pf.end.y - 0.16))
+			if front and i > 0:
+				_braces(xs[i - 1] + p * 0.5, xs[i] - p * 0.5, base.end.y - 0.2, top, true)
+		south = base.end.y - p * 0.5
+	# Back rows, hidden under the room: on the centre line or at the sides.
+	var zn := base.position.y + pb * 0.5
+	if south - zn < pb * 1.5:
 		return
-	# Pilasters and brass-banded corner posts down the front face.
-	var n := maxi(1, int(core.size.x / 1.6))
-	for i in range(1, n):
-		var x := core.position.x + core.size.x * i / n
-		_column(Vector3(x, top - 6.0, core.end.y + 0.12), Vector3(0.4, 12.0, 0.26))
-	# A lantern on the pillar face lights the masonry from below the slab.
-	var lc := Vector3(core.get_center().x + kit.jitter(0.5), top - 1.6, core.end.y + 0.35)
+	var back_xs: Array[float] = [base.get_center().x]
+	if base.size.x >= 6.5:
+		back_xs = [base.position.x + pb * 0.5, base.end.x - pb * 0.5]
+	var rows := _stations(zn, south, 7.5)
+	rows.pop_back()
+	for z in rows:
+		for x in back_xs:
+			_pier(Rect2(x - pb * 0.5, z - pb * 0.5, pb, pb), top, "stone_dark")
+
+
+## True when no room stands south of r across its width: its south face is
+## the one seen at the bottom of the view.
+func _is_front(r: Layout.Room) -> bool:
+	for o in layout.rooms:
+		if o == r:
+			continue
+		var overlap := minf(o.rect.end.x, r.rect.end.x) - maxf(o.rect.position.x, r.rect.position.x)
+		if o.rect.position.y >= r.rect.end.y - Layout.EPS and overlap > 1.0:
+			return false
+	return true
+
+
+## Evenly spaced positions from a to b (both included), at most `gap` apart.
+func _stations(a: float, b: float, gap: float) -> Array[float]:
+	var out: Array[float] = []
+	if b - a < 0.3:
+		out.append((a + b) * 0.5)
+		return out
+	var n := maxi(1, ceili((b - a) / gap))
+	for i in n + 1:
+		out.append(lerpf(a, b, float(i) / n))
+	return out
+
+
+## A slender masonry pier from `top` down to the abyss floor: corner
+## pilasters (the lit arrises) standing proud of recessed panels, a capital
+## under the corbels and band courses every few metres; rougher courses
+## lower down, then plain masonry lost in the haze. Piers hidden under a
+## room (seen only down a shaft) are laid in the darker stone.
+func _pier(foot: Rect2, top: float, mat := "stone") -> void:
+	var cap := 0.34
+	_block_box(foot.grow(0.1), top - cap, top, Vector2(0.45, 0.9), cap, mat)
+	var y := top - cap
+	var low := maxf(DEEP_BLOCKS, top - 14.0)
+	var pil := clampf(foot.size.x * 0.26, 0.36, 0.5)
+	_block_box(foot.grow(-0.15), low, y, Vector2(0.45, 1.0), 0.52, mat)
+	for q in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
+		var cx: float = foot.position.x + pil * 0.5 + (foot.size.x - pil) * q.x
+		var cz: float = foot.position.y + pil * 0.5 + (foot.size.y - pil) * q.y
+		_column(Vector3(cx, (low + y) * 0.5, cz), Vector3(pil, y - low, pil), mat)
+	var b := y - kit.rng.randf_range(3.0, 4.5)
+	while b > low + 1.5:
+		_block_box(foot.grow(0.06), b - 0.3, b, Vector2(0.45, 0.9), 0.3, mat)
+		b -= kit.rng.randf_range(4.5, 6.5)
+	if low > DEEP_BLOCKS:
+		_block_box(foot, DEEP_BLOCKS, low, Vector2(1.0, 1.9), 0.7, mat)
+	var c := foot.get_center()
+	kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + DEEP_BLOCKS) * 0.5, c.y), Vector3(foot.size.x, DEEP_BLOCKS - Layout.ABYSS, foot.size.y))
+
+
+## A brass-banded timber post from under the slab to the abyss floor.
+func _post(p: Vector2, top: float, size := 0.3) -> void:
+	kit.span("plank", "wood_dark", Vector3(p.x, top + 0.1, p.y), Vector3(p.x, Layout.ABYSS, p.y), Vector2(size, size))
+	for y in [top - 0.35, top - 3.2, top - 7.5]:
+		kit.put("box", "brass", Vector3(p.x, y, p.y), Vector3(size + 0.08, 0.1, size + 0.08))
+
+
+## Timber in the open bay between two supports (x0..x1 at z): a heavy beam
+## under the slab and knee braces from both sides; on a front, a brass-
+## strapped tie lower down and, in some wide bays, a cross brace between
+## them. The bay itself stays open to the dark.
+func _braces(x0: float, x1: float, z: float, top: float, beam: bool) -> void:
+	var w := x1 - x0
+	if w < 0.4:
+		return
+	if beam:
+		kit.span("plank", "wood_dark", Vector3(x0 - 0.15, top - 0.2, z), Vector3(x1 + 0.15, top - 0.2, z), Vector2(0.36, 0.32))
+	var k := minf(1.2, w * 0.35)
+	for e in [[x0, 1.0], [x1, -1.0]]:
+		var x: float = e[0]
+		var d: float = e[1]
+		kit.span("plank", "wood_dark", Vector3(x, top - 0.3 - k * 1.4, z), Vector3(x + d * k, top - 0.36, z), Vector2(0.17, 0.15))
+		kit.put("box", "brass", Vector3(x + d * k, top - 0.22, z + 0.18), Vector3(0.12, 0.36, 0.03))
+	if not beam:
+		return
+	var yt := top - kit.rng.randf_range(4.2, 5.6)
+	kit.span("plank", "wood_dark", Vector3(x0 - 0.1, yt, z), Vector3(x1 + 0.1, yt, z), Vector2(0.28, 0.26))
+	for x in [x0 + 0.22, x1 - 0.22]:
+		kit.put("box", "brass", Vector3(x, yt, z + 0.15), Vector3(0.12, 0.34, 0.03))
+	# A lantern hung from the tie of a wide bay frames the opening below.
+	if w > 2.0:
+		var lx := (x0 + x1) * 0.5 + kit.jitter(w * 0.2)
+		kit.span("box", "iron", Vector3(lx, yt - 0.1, z + 0.05), Vector3(lx, yt - 0.55, z + 0.05), Vector2(0.03, 0.03))
+		_lantern(Vector3(lx, yt - 0.78, z - 0.3))
+	if w > 2.0 and kit.rng.randf() < 0.5:
+		var y0 := top - 0.6
+		kit.span("plank", "wood_dark", Vector3(x0, y0, z), Vector3(x1, yt, z), Vector2(0.16, 0.14))
+		kit.span("plank", "wood_dark", Vector3(x1, y0, z), Vector3(x0, yt, z), Vector2(0.16, 0.14))
+
+
+## A lantern hung on a pier face: a pinpoint warm pool on the nearby blocks,
+## not a wash over the whole shaft.
+func _lantern(face: Vector3) -> void:
+	var lc := face + Vector3(0, 0, 0.35)
 	kit.put("block", "iron", lc + Vector3(0, 0.3, -0.12), Vector3(0.1, 0.5, 0.25))
 	kit.put("cyl8", "brass", lc, Vector3(0.26, 0.36, 0.26))
 	kit.put("flame", "flame", lc + Vector3(0, 0.02, 0), Vector3(0.14, 0.24, 0.14))
 	kit.put("sphere", "glow", lc, Vector3(0.1, 0.16, 0.1))
-	# Warm-white and inverse-square: a pinpoint pool on the nearby blocks,
-	# not a wash over the whole shaft.
 	kit.light(lc + Vector3(0, -0.1, 0.4), Color(1.0, 0.78, 0.55), 0.8, 2.8, false, 1.0, 2.0)
-	for x in [core.position.x - 0.1, core.end.x + 0.1]:
-		var z := core.end.y + 0.1
-		kit.span("plank", "wood_dark", Vector3(x, top + 0.1, z), Vector3(x, top - 24.0, z), Vector2(0.24, 0.24))
-		for y in [top - 0.5, top - 3.5]:
-			kit.put("box", "iron", Vector3(x, y, z), Vector3(0.3, 0.12, 0.3))
 
 
-func _timber_frame(core: Rect2, y0: float, y1: float) -> void:
-	var z := core.end.y - 0.2
-	var xs := [core.position.x + 0.15, core.get_center().x, core.end.x - 0.15]
-	for x in xs:
-		kit.span("plank", "wood_dark", Vector3(x, y0, z), Vector3(x, y1, z), Vector2(0.24, 0.2))
-	for i in 2:
-		var a: float = xs[i]
-		var b: float = xs[i + 1]
-		kit.span("plank", "wood_dark", Vector3(a, y0, z), Vector3(b, y1, z), Vector2(0.16, 0.14))
-		kit.span("plank", "wood_dark", Vector3(b, y0, z), Vector3(a, y1, z), Vector2(0.16, 0.14))
-	for y in [y0, (y0 + y1) * 0.5, y1]:
-		kit.span("plank", "wood_dark", Vector3(xs[0] - 0.2, y, z + 0.02), Vector3(xs[2] + 0.2, y, z + 0.02), Vector2(0.2, 0.18))
-		for x in xs:
-			kit.put("box", "brass", Vector3(x, y, z + 0.12), Vector3(0.3, 0.12, 0.04))
-
-
+## A slim central drum under the round dais, and brass-banded posts under
+## its rim with struts back to the drum: the shafts beside it stay open.
 func _round_pillar(r: Layout.Room) -> void:
 	var c := r.center()
 	var top := r.y - SLAB
@@ -844,10 +928,17 @@ func _round_pillar(r: Layout.Room) -> void:
 	for step in 3:
 		_ring(c, rad - 0.2 * (step + 1), top - 0.3, top, 0.4, 0.55)
 		top -= 0.3
-	var pr := rad - 1.0
+	var pr := rad * 0.4
 	_ring(c, pr, top - 6.0, top, 0.45, 0.8, 0.32)
 	_ring(c, pr, DEEP_BLOCKS, top - 6.0, 0.6, 1.4, 0.6)
 	kit.put("cyl", "stone_dark", Vector3(c.x, (Layout.ABYSS + DEEP_BLOCKS) * 0.5, c.y), Vector3(pr * 2.0, DEEP_BLOCKS - Layout.ABYSS, pr * 2.0))
+	for k in 4:
+		var d := Vector2.from_angle(PI * 0.25 + k * PI * 0.5)
+		var p := c + d * (rad - 1.1)
+		var q := c + d * (pr - 0.1)
+		_post(p, top)
+		kit.span("plank", "wood_dark", Vector3(q.x, top - 0.2, q.y), Vector3(p.x, top - 0.2, p.y), Vector2(0.28, 0.3))
+		kit.span("plank", "wood_dark", Vector3(q.x, top - 2.6, q.y), Vector3(p.x, top - 0.4, p.y), Vector2(0.18, 0.16))
 
 
 ## Courses of blocks laid around a circle of radius rad.
@@ -996,29 +1087,24 @@ func link(l: Layout.Link) -> void:
 			_stairs(l)
 
 
-## Timber posts standing against the pillars at both ends of a span, with
-## cross bracing and ledger beams, running down into the dark.
+## Timber posts at both ends of a span running down into the dark, with a
+## ledger across each pair and knee braces up to the deck: no cross bracing,
+## so a bridge over a shaft leaves the shaft open below it.
 func _truss(l: Layout.Link) -> void:
 	var dirf := float(signf(l.s1 - l.s0))
 	var half := l.width * 0.5 + 0.15
 	var low := minf(l.ya, l.yb) - SLAB - 0.4
 	var depth := kit.rng.randf_range(14.0, 22.0)
-	for end in [l.s0 + dirf * 0.2, l.s1 - dirf * 0.2]:
+	var reach := minf(0.9, l.gap() * 0.3)
+	for e in [[l.s0 + dirf * 0.2, dirf], [l.s1 - dirf * 0.2, -dirf]]:
+		var end: float = e[0]
+		var d: float = e[1]
 		for c in [-half, half]:
 			kit.span("plank", "wood_dark", _p(l, end, c, low + 0.3), _p(l, end, c, low - depth), Vector2(0.22, 0.22))
 			kit.put("box", "iron", _p(l, end, c, low - 0.4), Vector3(0.28, 0.1, 0.28))
-	var bay := 3.2
-	var y0 := low
-	var bays := 0
-	while y0 > low - depth + bay and bays < 1:
-		bays += 1
-		var a := l.s0 + dirf * 0.2
-		var b := l.s1 - dirf * 0.2
-		for c in [-half, half]:
-			kit.span("plank", "wood_dark", _p(l, a, c, y0), _p(l, b, c, y0 - bay), Vector2(0.14, 0.14))
-			kit.span("plank", "wood_dark", _p(l, b, c, y0), _p(l, a, c, y0 - bay), Vector2(0.14, 0.14))
-			kit.span("plank", "wood_dark", _p(l, a, c, y0 - bay), _p(l, b, c, y0 - bay), Vector2(0.18, 0.2))
-		y0 -= bay
+			if reach > 0.3:
+				kit.span("plank", "wood_dark", _p(l, end, c, low - reach * 1.3), _p(l, end + d * reach, c, low + 0.15), Vector2(0.12, 0.12))
+		kit.span("plank", "wood_dark", _p(l, end, -half, low - 0.5), _p(l, end, half, low - 0.5), Vector2(0.16, 0.16))
 
 
 ## Grit, pebbles and spalled chips on a floor, thicker along the walls.
@@ -1238,9 +1324,9 @@ func _stairs(l: Layout.Link) -> void:
 			_course_wall("n" if l.axis == 0 else "w", band, low - SLAB, top + 0.45, "stone")
 	var foot := Rect2(lo, l.center - half - 0.3, hi - lo, l.width + 0.6) if l.axis == 0 \
 		else Rect2(l.center - half - 0.3, lo, l.width + 0.6, hi - lo)
+	# A short masonry underside: the flight is carried between its two rooms
+	# (and the truss posts at its ends), leaving the shaft below it open.
 	if foot.size.x > 0.6 and foot.size.y > 0.6:
-		_block_box(foot.grow(-0.1), low - SLAB - 6.0, low - SLAB, Vector2(0.7, 1.3), 0.5)
-		var c := foot.get_center()
-		kit.put("box", "stone_dark", Vector3(c.x, (Layout.ABYSS + low - SLAB - 6.0) * 0.5, c.y), Vector3(foot.size.x - 0.3, low - SLAB - 6.0 - Layout.ABYSS, foot.size.y - 0.3))
+		_block_box(foot.grow(-0.1), low - SLAB - 1.0, low - SLAB, Vector2(0.7, 1.3), 0.5)
 	if high - low > 0.0:
 		pass

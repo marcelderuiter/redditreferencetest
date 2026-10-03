@@ -68,7 +68,7 @@ same camera maths the game uses (`scripts/viewmath.py`, notes in
 - **16 rooms**, each a named plan rectangle (or circle) at a floor height:
   keep, rampart, gallery, study, forge, hall, landing, throne room, store,
   chapel, treasury, orrery, east wing, cellar, lift and low dock.
-- **17 links**, each declared between two named rooms: doors, wooden bridges,
+- **18 links**, each declared between two named rooms: doors, wooden bridges,
   a stone walkway, iron girders and stairs. `Layout.resolve()` works out
   which sides face each other, the gap, the cross-axis fit, the wall
   openings, the heights and the step count, and rejects any link that can't
@@ -77,8 +77,9 @@ same camera maths the game uses (`scripts/viewmath.py`, notes in
 - **Props** are placed at fractions of a room's floor. They must stand on that
   floor and keep clear of every doorway and landing, and their footprints
   block the walk grid.
-- **Supports** are part of the model: every room stands on corbelled stone
-  pillars, or on timber posts (the dock), that reach the abyss floor. The lift
+- **Supports** are part of the model: every room stands on corbelled,
+  slender stone piers (and, under a south edge that overhangs a shaft, timber
+  posts), or on timber posts alone (the dock), that reach the abyss floor. The lift
   hangs between two girders whose far ends stand on their own. Long spans get
   posts and trusses, and chains hang from bridges and the lift. Where two rooms
   touch, one wall stands on the shared edge and the other floor runs up to it.

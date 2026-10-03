@@ -12,39 +12,42 @@ static func build() -> Layout:
 	# North-west keep: guard on a raised platform, braziers on its towers.
 	L.room("keep", -18.5, -17.5, -13.0, -14.5, 1.6,
 		{walls = {n = 0.9, e = 0.9, s = 0.7, w = 0.9}, towers = {nw = 2.4, ne = 2.4}, tower_fire = true})
-	L.room("rampart", -18.5, -12.0, -9.5, -9.5, 0.0,
+	# The rampart stops at the forge's east edge: from there east to the hall
+	# the gallery looks down a deep shaft (the reference's upper-left void).
+	L.room("rampart", -18.5, -12.0, -13.0, -9.5, 0.0,
 		{walls = {n = 0.8, e = 0.8, s = 0.7, w = 0.8}})
 	L.room("gallery", -13.0, -18.0, -8.0, -12.0, 0.0,
-		{walls = {n = 2.4, e = 1.6, s = 0.8, w = 1.2}, towers = {ne = 3.0}})
+		{walls = {n = 2.4, e = 1.6, s = 0.8, w = 1.2}, towers = {ne = 3.0}, open_s = true})
 	L.room("study", -8.0, -17.0, -2.0, -10.0, 0.0,
 		{walls = {n = 2.4, e = 1.0, s = 1.0, w = 1.2}, towers = {nw = 3.0, ne = 2.6}})
-	L.room("forge", -18.5, -9.5, -12.5, -3.5, 0.0,
+	L.room("forge", -18.5, -9.5, -13.0, -3.5, 0.0,
 		{walls = {n = 2.6, e = 1.0, s = 0.8, w = 1.4}, towers = {nw = 3.2, sw = 1.8}})
 	L.room("hall", -7.5, -10.0, -2.5, 3.0, 0.0,
-		{walls = {n = 2.4, e = 0.9, s = 0.7, w = 0.9}, towers = {ne = 2.4}})
+		{walls = {n = 2.4, e = 0.9, s = 0.7, w = 0.9}})
 	L.room("landing", -8.0, 3.0, -2.5, 8.5, 0.0,
 		{walls = {n = 0.7, e = 0.8, s = 0.8, w = 0.8}, towers = {sw = 1.6}})
 	L.room("throne", -18.5, 1.0, -10.5, 7.0, 0.0,
 		{walls = {n = 1.5, e = 0.8, s = 0.8, w = 0.9}, towers = {nw = 2.4, ne = 2.0}})
-	L.room("store", 2.0, -16.5, 6.5, -8.0, 0.0,
-		{walls = {n = 2.2, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.8}})
+	L.room("store", 2.0, -16.5, 6.5, -7.5, 0.0,
+		{walls = {n = 2.2, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.8}, open_s = true})
 	L.room("chapel", 6.5, -13.0, 12.0, -6.5, 1.6,
 		{walls = {n = 4.0, e = 1.6, s = 0.7, w = 1.6}, towers = {nw = 4.6, ne = 4.6}})
-	L.room("treasury", 12.0, -10.5, 19.5, -2.5, 1.6,
-		{walls = {n = 2.4, e = 1.4, s = 0.9, w = 1.2}, towers = {ne = 3.4, se = 2.2}, balustrade = ["s"]})
+	# A shaft separates the treasury's balustrade from the east wing.
+	L.room("treasury", 12.0, -10.5, 19.5, -4.6, 1.6,
+		{walls = {n = 2.4, e = 1.4, s = 0.9, w = 1.2}, towers = {ne = 3.4, se = 2.2}, balustrade = ["s"], open_s = true})
 	L.room("orrery", 5.25, -5.3, 13.25, 2.7, 0.8,
 		{round = true, wall_t = 0.4, walls = {n = 0.7, e = 0.7, s = 0.7, w = 0.7}})
-	L.room("eastwing", 15.0, -2.5, 18.5, 2.5, 0.8,
-		{walls = {n = 0.0, e = 1.1, s = 0.8, w = 0.8}, towers = {ne = 2.2}, balustrade = ["s"]})
+	L.room("eastwing", 15.0, -2.6, 18.5, 2.5, 0.8,
+		{walls = {n = 0.7, e = 1.1, s = 0.8, w = 0.8}, towers = {ne = 2.2}, balustrade = ["s"]})
 	L.room("cellar", 5.5, 4.0, 17.5, 12.0, 0.0,
-		{walls = {n = 1.0, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}})
+		{walls = {n = 0.6, e = 1.2, s = 0.8, w = 1.0}, towers = {nw = 2.0, ne = 2.2, se = 1.8, sw = 1.6}})
 	L.room("lift", -1.5, 3.5, 2.0, 7.5, 0.0,
 		{wall_t = 0.15, support = "links", theme = "iron", walls = {n = 0.5, e = 0.5, s = 0.5, w = 0.5}})
 	L.room("lowdock", 0.5, 8.0, 3.5, 10.5, -1.2,
 		{wall_t = 0.15, support = "posts", theme = "wood", walls = {n = 0.9, e = 0.9, s = 0.9, w = 0.9}})
 
 	L.link("stairs", "keep", "rampart", {width = 2.6, at = -16.0})
-	L.link("door", "rampart", "gallery")
+	L.link("door", "rampart", "forge", {width = 1.2, at = -16.55})
 	L.link("door", "gallery", "study")
 	L.link("door", "study", "hall", {at = -5.0})
 	L.link("bridge", "study", "store", {at = -15.0})
@@ -52,6 +55,7 @@ static func build() -> Layout:
 	L.link("door", "hall", "landing", {width = 3.0, at = -5.0})
 	L.link("walk", "throne", "landing", {width = 1.6, at = 4.6})
 	L.link("bridge", "hall", "orrery", {width = 1.8})
+	L.link("girder", "hall", "store", {width = 1.2, at = -8.75})
 	L.link("stairs", "chapel", "orrery", {width = 2.0})
 	L.link("door", "chapel", "treasury")
 	L.link("bridge", "orrery", "eastwing", {at = -1.3})
@@ -68,8 +72,8 @@ static func build() -> Layout:
 	L.prop("statue_knight", "keep", 0.45, 0.25, {weapon = "spear", rot = 10.0})
 	L.prop("candles", "keep", 0.9, 0.2)
 	# Rampart
-	L.prop("candles", "rampart", 0.6, 0.6)
-	L.prop("barrel", "rampart", 0.5, 0.45)
+	L.prop("candles", "rampart", 0.05, 0.15)
+	L.prop("barrel", "rampart", 0.88, 0.3)
 	# Gallery
 	L.prop("armor_stand", "gallery", 0.2, 0.12)
 	L.prop("bench", "gallery", 0.55, 0.1)
@@ -91,12 +95,12 @@ static func build() -> Layout:
 	L.feature("banner", "study", "n", 0.85)
 	L.prop("chest", "study", 0.15, 0.85)
 	# Forge
-	L.prop("fireplace", "forge", 0.62, 0.07)
+	L.prop("fireplace", "forge", 0.75, 0.07)
 	L.prop("table", "forge", 0.6, 0.32, {rot = 0.0, items = "tools"})
 	L.prop("table", "forge", 0.3, 0.78, {rot = 90.0, items = "mugs"})
-	L.prop("barrel", "forge", 0.08, 0.45)
-	L.prop("barrel", "forge", 0.1, 0.56)
-	L.prop("crates", "forge", 0.12, 0.2)
+	L.prop("barrel", "forge", 0.08, 0.55)
+	L.prop("barrel", "forge", 0.1, 0.66)
+	L.prop("crates", "forge", 0.12, 0.3)
 	L.prop("candles", "forge", 0.9, 0.55)
 	L.prop("anvil", "forge", 0.85, 0.3)
 	L.prop("sacks", "forge", 0.55, 0.9)
@@ -107,7 +111,7 @@ static func build() -> Layout:
 	L.prop("armor_stand", "hall", 0.9, 0.2)
 	for v in [0.12, 0.6, 0.78, 0.9]:
 		L.prop("candle_stand", "hall", 0.06, v)
-	for v in [0.12, 0.45, 0.82]:
+	for v in [0.3, 0.55, 0.82]:
 		L.prop("candle_stand", "hall", 0.94, v)
 	L.feature("door_arch", "hall", "n", 0.5)
 	L.feature("banner", "hall", "n", 0.15)
@@ -133,12 +137,12 @@ static func build() -> Layout:
 	L.prop("barrel", "store", 0.1, 0.42)
 	L.prop("barrel", "store", 0.1, 0.52)
 	L.prop("barrel", "store", 0.27, 0.47)
-	L.prop("crates", "store", 0.18, 0.78)
+	L.prop("crates", "store", 0.18, 0.66)
 	L.prop("statue_knight", "store", 0.62, 0.5, {weapon = "axe"})
 	L.prop("chest", "store", 0.75, 0.12)
 	L.prop("candles", "store", 0.85, 0.8)
 	L.prop("shelf", "store", 0.6, 0.05)
-	L.prop("sacks", "store", 0.35, 0.8)
+	L.prop("sacks", "store", 0.5, 0.8)
 	L.feature("sconce", "store", "e", 0.6)
 	# Chapel
 	L.prop("statue_big", "chapel", 0.5, 0.1, {robed = true})

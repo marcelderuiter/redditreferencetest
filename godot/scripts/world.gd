@@ -157,7 +157,9 @@ static func backdrop(kit: Kit, layout: Layout) -> void:
 				continue
 			var top := rng.randf_range(-30.0, -10.0)
 			if bounds.grow(3.0).has_point(p):
-				top = rng.randf_range(-40.0, -14.0)
+				# Down the shafts between the rooms: deep enough that the
+				# shafts first drop to darkness, then show far masonry.
+				top = rng.randf_range(-46.0, -24.0)
 			elif p.y < bounds.position.y - 3.0:
 				var back := clampf((bounds.position.y - p.y) / 80.0, 0.0, 1.0)
 				top = rng.randf_range(-26.0, -6.0) + back * rng.randf_range(0.0, 32.0)
