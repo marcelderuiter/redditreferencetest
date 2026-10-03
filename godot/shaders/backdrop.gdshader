@@ -1,24 +1,25 @@
+// Distant gothic towers in the void: dark blue stone, sparse lit slits.
 shader_type spatial;
-render_mode unshaded;
-#include "res://shaders/common.gdshaderinc"
+render_mode diffuse_burley;
+#include "res://shaders/noise.gdshaderinc"
 
-// Distant gothic masonry: stylised cool moonlight with a vertical falloff so
-// silhouettes read through the haze without competing with the lit diorama.
-uniform vec3 light_dir = vec3(-0.5, 0.6, 0.45);
-uniform vec3 lit = vec3(0.026, 0.042, 0.095);
-uniform vec3 shade_color = vec3(0.004, 0.006, 0.014);
-
+uniform vec3 albedo : source_color = vec3(0.10, 0.11, 0.14);
+varying vec3 wpos;
+varying vec3 wnorm;
 void vertex() {
-	COMMON_VERTEX
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	wnorm = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
 
 void fragment() {
-	vec3 world_n = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
-	float fine = tri_sample(noise_fine, v_world * 0.5, world_n, 0.6);
-	float coarse = tri_sample(noise_coarse, v_world * 0.5, world_n, 0.15);
-	float diffuse = clamp(dot(world_n, normalize(light_dir)), 0.0, 1.0);
-	float height = smoothstep(-60.0, 10.0, v_world.y);
-	vec3 c = mix(shade_color, lit, diffuse * (0.5 + 0.5 * height));
-	c *= (0.75 + 0.5 * fine) * (0.8 + 0.4 * coarse) * COLOR.rgb / 0.04;
+	vec3 an = abs(wnorm);
+	float u = an.x > an.z ? wpos.z : wpos.x;
+	vec2 cell = floor(vec2(u / 2.2, wpos.y / 3.5));
+	vec2 f = fract(vec2(u / 2.2, wpos.y / 3.5));
+	float lit = step(0.93, hash13(vec3(cell, an.x))) * step(0.35, f.x) * step(f.x, 0.65) * step(0.2, f.y) * step(f.y, 0.8);
+	float course = smoothstep(0.0, 0.06, fract(wpos.y / 0.9)) * 0.3 + 0.7;
+	vec3 c = albedo * COLOR.rgb * (0.7 + 0.5 * fbm3(wpos * 0.5)) * course;
 	ALBEDO = c;
+	ROUGHNESS = 0.95;
+	EMISSION = vec3(1.0, 0.45, 0.15) * lit * 1.2 * COLOR.a;
 }

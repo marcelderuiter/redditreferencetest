@@ -1,27 +1,18 @@
+// Candle and fire flames: additive, unshaded teardrop.
 shader_type spatial;
-render_mode unshaded, blend_add, depth_draw_never, cull_back, shadows_disabled, fog_disabled;
+render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
 
-// custom.x seed, custom.y intensity. Additive emissive teardrop.
-varying float v_height;
-varying float v_seed;
-varying float v_intensity;
-
-void vertex() {
-	v_seed = INSTANCE_CUSTOM.x;
-	v_intensity = INSTANCE_CUSTOM.y;
-	v_height = VERTEX.y + 0.5;
-	float t = TIME * (7.0 + v_seed * 5.0) + v_seed * 40.0;
-	float sway = (sin(t) * 0.5 + sin(t * 1.7 + 1.3) * 0.3) * v_height * v_height;
-	VERTEX.x += sway * 0.25;
-	VERTEX.z += cos(t * 1.3) * 0.12 * v_height * v_height;
-	VERTEX.y *= 1.0 + 0.12 * sin(t * 2.3);
-}
+uniform vec3 core : source_color = vec3(1.0, 0.85, 0.5);
+uniform vec3 outer : source_color = vec3(1.0, 0.38, 0.06);
+uniform float energy = 3.0;
 
 void fragment() {
-	float core = 1.0 - smoothstep(0.0, 0.75, v_height);
-	float facing = clamp(dot(NORMAL, VIEW), 0.0, 1.0);
-	vec3 hot = vec3(1.0, 0.85, 0.55);
-	vec3 col = mix(COLOR.rgb, hot, core * 0.8);
-	float flicker = 0.85 + 0.15 * sin(TIME * 13.0 + v_seed * 60.0);
-	ALBEDO = col * (1.2 + 5.0 * core) * facing * v_intensity * flicker;
+	vec2 p = UV * 2.0 - 1.0;
+	float y = 1.0 - UV.y;                 // 0 bottom .. 1 tip
+	float width = sin(clamp(y, 0.0, 1.0) * 3.14159) * (1.0 - y * 0.55) + 0.05;
+	float d = abs(p.x) / max(width, 0.01);
+	float a = smoothstep(1.0, 0.2, d) * smoothstep(0.0, 0.12, y) * smoothstep(1.0, 0.75, y);
+	float hot = smoothstep(0.6, 0.0, d) * smoothstep(0.75, 0.15, y);
+	vec3 c = mix(outer, core, hot) * energy * COLOR.rgb;
+	ALBEDO = c * a;
 }

@@ -1,16 +1,13 @@
+// Candle wax: pale, a little translucent-looking (emission near the top).
 shader_type spatial;
-render_mode diffuse_burley, specular_schlick_ggx;
-#include "res://shaders/common.gdshaderinc"
+render_mode diffuse_burley;
 
-void vertex() {
-	COMMON_VERTEX
-}
+uniform vec3 albedo : source_color = vec3(0.85, 0.72, 0.5);
+varying vec3 lpos;
+void vertex() { lpos = VERTEX; }
 
 void fragment() {
-	// Candle bodies glow just below the flame.
-	float top = smoothstep(v_scale.y * 0.15, v_scale.y * 0.5, v_local.y);
-	ALBEDO = COLOR.rgb;
-	ROUGHNESS = 0.45;
-	SSS_STRENGTH = 0.6;
-	EMISSION = vec3(1.0, 0.55, 0.2) * top * 0.9;
+	ALBEDO = albedo * COLOR.rgb;
+	ROUGHNESS = 0.6;
+	EMISSION = vec3(1.0, 0.55, 0.2) * smoothstep(0.1, 0.5, lpos.y) * 0.6;
 }
