@@ -392,12 +392,18 @@ func connections() -> void:
 	bridge(Vector3(23.3, 0.3, 34.4), Vector3(37.7, -0.4, 34.4), 1.8, false, true, -40.0)
 	bridge(Vector3(46.1, 0.6, 24.0), Vector3(51.2, -0.4, 24.0), 2.8, true, true, -40.0)
 	bridge(Vector3(37.7, -0.4, 40.6), Vector3(31.5, -0.6, 40.6), 2.4, true, true, -40.0)
-	# timber landing at the end of the low bridge
+	# timber stair-tower: the low bridge lands on it and a stair climbs north to
+	# the long hall-barracks bridge, so the walkway joins the network.
+	var deck_y := lerpf(0.3, -0.4, (30.5 - 23.3) / (37.7 - 23.3))
 	box("wood", Vector3(30.5, -0.75, 40.6), Vector3(2.4, 0.2, 3.0), Kit.WOOD)
 	add_walk(Walk.rect(29.3, 39.1, 31.7, 42.1, -0.6, 0.2))
 	trestle(Vector3(30.5, -0.6, 40.6), Vector3(0, 0, 1), 2.4, -40.0)
-	for p in [Vector2(29.4, 39.2), Vector2(31.6, 39.2), Vector2(29.4, 42.0)]:
-		box("wood", Vector3(p.x, -0.2, p.y), Vector3(0.18, 1.1, 0.18), Kit.WOOD_DARK)
+	timber_stairs(29.8, 39.1, 31.2, 35.3, -0.6, deck_y)
+	for p in [Vector2(29.4, 42.0), Vector2(31.6, 42.0), Vector2(29.4, 39.2)]:
+		box("wood", Vector3(p.x, -0.1, p.y), Vector3(0.18, 1.1, 0.18), Kit.WOOD_DARK)
+		box("brass", Vector3(p.x, 0.47, p.y), Vector3(0.24, 0.06, 0.24), Kit.BRASS)
+	beam("wood", Vector3(29.4, 0.3, 39.2), Vector3(29.4, 0.3, 42.0), 0.1, 0.1, Kit.WOOD)
+	beam("wood", Vector3(29.4, 0.3, 42.0), Vector3(31.6, 0.3, 42.0), 0.1, 0.1, Kit.WOOD)
 	candles(Vector3(29.7, -0.65, 41.7), 3, 0.15)
 	# stairs and door ramps between rooms (stairs() also adds the walk ramp)
 	stairs(39.0, 14.6, 42.0, 18.6, 2.0, 0.6, false)
@@ -409,12 +415,19 @@ func connections() -> void:
 	add_walk(Walk.ramp(15.3, 28.8, 16.7, 31.2, -0.2, 0.3, true))
 	add_walk(Walk.ramp(44.8, 7.5, 46.3, 9.0, 2.0, 1.6, true))
 	add_walk(Walk.ramp(51.3, 31.3, 55.5, 32.8, -0.4, -0.4, false))
-	# timber and brass scaffolding standing in the gaps between rooms
-	for p in [Vector2(13.5, 21.0), Vector2(26.5, 6.0), Vector2(28.0, 25.5), Vector2(33.0, 30.0), Vector2(48.5, 27.5), Vector2(24.5, 38.5), Vector2(34.0, 42.5), Vector2(27.5, 17.0), Vector2(48.5, 19.5)]:
-		trestle(Vector3(p.x, -1.2, p.y), Vector3(1, 0, 0), 1.6, -40.0)
 	# hanging chains below the lift
 	for x in [24.0, 31.0]:
 		chain(Vector3(x, -0.5, 33.3), Vector3(x, -14.0, 33.3))
+
+## Wooden stair from (x0..x1, z0) at h0 to z1 at h1, with stringers and a walk ramp.
+func timber_stairs(x0: float, z0: float, x1: float, z1: float, h0: float, h1: float) -> void:
+	var n := maxi(3, int(absf(z1 - z0) / 0.35))
+	for i in n:
+		var t := (i + 0.5) / n
+		box("wood", Vector3((x0 + x1) * 0.5, lerpf(h0, h1, t) - 0.05, lerpf(z0, z1, t)), Vector3(x1 - x0, 0.08, absf(z1 - z0) / n - 0.03), jit(Kit.WOOD, 0.2))
+	for x in [x0, x1]:
+		beam("wood", Vector3(x, h0 - 0.2, z0), Vector3(x, h1 - 0.2, z1), 0.12, 0.26, Kit.WOOD_DARK)
+	add_walk(Walk.ramp(x0, z0, x1, z1, h0, h1, false))
 
 func backdrop() -> void:
 	# A gothic city falling away into the abyss: huge piers, arches and walls.

@@ -38,8 +38,9 @@ User args (after `--`): `--seed=N --cam=yaw,pitch,dist,fov,tx,ty,tz --size=WxH
 - `layout.gd`: the authored plan, traced from the reference composition.
   It has ten rooms (gatehouse with dais and stairs, study, forge, long hall,
   ruined statue court, chapel, treasury, barracks with an east landing), the
-  round brass mechanism platform, the hanging lift, six bridges, timber
-  trestles in the gaps, and a gothic backdrop falling into the abyss.
+  round brass mechanism platform, the hanging lift, six bridges (the low one
+  meets a timber stair-tower up to the long bridge), and a gothic backdrop
+  falling into the abyss.
 - `kit.gd`: the building kit. It provides instance batching (one MultiMesh per
   mesh × material), irregular flagstones, ragged masonry walls with proud
   blocks, towers, piers, foundations, stairs, bridges, trestles, chains,
@@ -77,6 +78,7 @@ Scores (seed 7, 1080×810, default camera, against the local reference):
 | --- | --- | --- |
 | Layout, lighting and camera as first committed | 68.4 | 84.6 |
 | Abyss and background less blue (the LUT had been warming the shadows) | 76.6 | **85.8** |
+| Dead-end low bridge joined to the long bridge by a stair; scaffolds that held nothing removed | 76.4 | 85.7 |
 
 The fitted lightness curve is gentle (0.4→0.44, 0.8→0.74). The remaining
 penalty is mostly hue mix (too little pure orange) and local contrast (×0.88
@@ -91,3 +93,8 @@ primitive-built stand-ins.
 ```sh
 godot --headless --path diorama --script res://tools/check.gd   # every area reachable from the spawn
 ```
+
+Neither check catches a bridge that leads nowhere. `compare.py` scores colour
+and texture regardless of composition, and a dead end still counts as
+reachable. Check connections by eye, for example with a top-down render:
+`--cam=0,-89.9,190,20,28,0,20`.
