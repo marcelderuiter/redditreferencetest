@@ -24,9 +24,11 @@ const NO_SHADOW := ["flame", "glow", "ember", "window_glow", "backdrop"]
 const SHADOW_ONLY := ["occluder"]
 ## Render layer bit of the pieces below the floors (piers, shaft walls, legs):
 ## the sun never reaches them, so World lights them with their own key.
+## "stone_dark" is the masonry in the shade (back piers under the rooms,
+## recessed panels): it stays off the key and reads as depth.
 const UNDER_LAYER := 4
 const UNDER_Y := -2.4
-const NOT_UNDER := ["backdrop", "occluder", "flame", "glow", "ember", "window_glow", "void"]
+const NOT_UNDER := ["backdrop", "occluder", "flame", "glow", "ember", "window_glow", "void", "stone_dark"]
 ## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
 const BACKDROP_LAYER := 2
 ## Metric chamfer (m) of the bevelled meshes in the stone materials. The stone

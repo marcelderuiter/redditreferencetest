@@ -853,7 +853,8 @@ func _pier(foot: Rect2, top: float, mat := "stone") -> void:
 	var y := top - cap
 	var low := maxf(DEEP_BLOCKS, top - 14.0)
 	var pil := clampf(foot.size.x * 0.26, 0.36, 0.5)
-	_block_box(foot.grow(-0.15), low, y, Vector2(0.45, 1.0), 0.52, mat)
+	# The recessed panels between the pilasters sit in their shade.
+	_block_box(foot.grow(-0.15), low, y, Vector2(0.45, 1.0), 0.52, "stone_dark")
 	for q in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
 		var cx: float = foot.position.x + pil * 0.5 + (foot.size.x - pil) * q.x
 		var cz: float = foot.position.y + pil * 0.5 + (foot.size.y - pil) * q.y

@@ -3,7 +3,7 @@ extends RefCounted
 ## Environment, lights and the abyss backdrop around the level.
 
 const AMBIENT := Color(0.5, 0.48, 0.5)
-const FOG := Color8(22, 22, 28)   # near-black, faintly cool haze
+const FOG := Color8(22, 18, 18)   # near-black haze (the grade cools it slightly)
 # A faint cool light on the distant masonry only (cull-masked to the backdrop
 # layer): just enough for the nearest piers' faces to separate from the dark.
 const ABYSS_LIGHT := Color(0.7, 0.76, 0.95)
@@ -19,7 +19,7 @@ const FILL_DIR := Vector3(0.15, -0.3, -0.94)   # travelling away from the camera
 # upper left-front that falls down the piers' front and west faces and catches
 # their left arrises, and a dim cool rim from behind-right on the far faces.
 # The stone's under-darkening and the height fog fade both with depth.
-const PIER_KEY := Color(1.0, 0.8, 0.6)
+const PIER_KEY := Color(1.0, 0.9, 0.8)
 const PIER_KEY_DIR := Vector3(0.5, -0.45, -0.74)
 const PIER_RIM := Color(0.55, 0.65, 1.0)
 const PIER_RIM_DIR := Vector3(-0.6, -0.35, 0.72)
@@ -116,7 +116,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	fill.shadow_enabled = false
 	fill.transform.basis = Basis.looking_at(FILL_DIR.normalized(), Vector3.UP)
 	parent.add_child(fill)
-	for spec in [["PierKey", PIER_KEY, PIER_KEY_DIR, tune("pier", 1.1)], ["PierRim", PIER_RIM, PIER_RIM_DIR, tune("pier_rim", 0.25)]]:
+	for spec in [["PierKey", PIER_KEY, PIER_KEY_DIR, tune("pier", 1.1)], ["PierRim", PIER_RIM, PIER_RIM_DIR, tune("pier_rim", 0.6)]]:
 		var l := DirectionalLight3D.new()
 		l.name = spec[0]
 		l.light_color = spec[1]
