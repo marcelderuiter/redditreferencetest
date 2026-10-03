@@ -104,8 +104,9 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 	return Color(base.r * v * (1.0 + w), base.g * v, base.b * v * (1.0 - w), 1.0)
 
 
-func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0) -> void:
-	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker})
+## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
+func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.4) -> void:
+	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 
 func flush(parent: Node3D) -> int:

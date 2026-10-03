@@ -811,7 +811,9 @@ func _pillar_core(core: Rect2, top: float, front: bool) -> void:
 	kit.put("cyl8", "brass", lc, Vector3(0.26, 0.36, 0.26))
 	kit.put("flame", "flame", lc + Vector3(0, 0.02, 0), Vector3(0.14, 0.24, 0.14))
 	kit.put("sphere", "glow", lc, Vector3(0.1, 0.16, 0.1))
-	kit.light(lc + Vector3(0, -0.1, 0.4), Color(1.0, 0.6, 0.32), 2.5, 6.0)
+	# Warm-white and inverse-square: a pinpoint pool on the nearby blocks,
+	# not a wash over the whole shaft.
+	kit.light(lc + Vector3(0, -0.1, 0.4), Color(1.0, 0.78, 0.55), 0.8, 2.8, false, 1.0, 2.0)
 	for x in [core.position.x - 0.1, core.end.x + 0.1]:
 		var z := core.end.y + 0.1
 		kit.span("plank", "wood_dark", Vector3(x, top + 0.1, z), Vector3(x, top - 24.0, z), Vector2(0.24, 0.24))

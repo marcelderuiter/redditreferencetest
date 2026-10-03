@@ -10,10 +10,15 @@ const ABYSS_LIGHT := Color(0.7, 0.76, 0.95)
 const ABYSS_LIGHT_DIR := Vector3(-0.55, -0.65, 0.5)   # travelling down, west, towards the camera
 const SUN_DIR := Vector3(0.35, -0.92, 0.12)   # travelling down, east and a little south
 const SUN_DIST := 110.0
+# Faint neutral fill from the camera side, level layer only, unshadowed:
+# the bounce and sky light that keeps sun-shadowed faces and the shafts under
+# the platforms reading as grey-brown stone instead of black or torch-orange.
+const FILL := Color(1.0, 0.88, 0.74)
+const FILL_DIR := Vector3(0.15, -0.3, -0.94)   # travelling away from the camera, slightly down
 
 
 ## Dev-only overrides for lighting sweeps: TUNE="key=value,..." in the
-## environment (keys: ambient, exposure, fog_height, fog_hd, sun, sun_spec, rim).
+## environment (keys: ambient, exposure, fog_height, fog_hd, sun, sun_spec, rim, fill).
 static func tune(key: String, value: float) -> float:
 	for kv in OS.get_environment("TUNE").split(",", false):
 		var p := kv.split("=")
@@ -93,6 +98,15 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 	rim.shadow_enabled = false
 	rim.transform.basis = Basis.looking_at(ABYSS_LIGHT_DIR.normalized(), Vector3.UP)
 	parent.add_child(rim)
+	var fill := DirectionalLight3D.new()
+	fill.name = "Fill"
+	fill.light_color = FILL
+	fill.light_energy = tune("fill", 0.2)
+	fill.light_specular = 0.0
+	fill.light_cull_mask = 1
+	fill.shadow_enabled = false
+	fill.transform.basis = Basis.looking_at(FILL_DIR.normalized(), Vector3.UP)
+	parent.add_child(fill)
 	var out: Array[OmniLight3D] = []
 	for l in lights:
 		var o := OmniLight3D.new()
@@ -100,7 +114,7 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 		o.light_color = l.color
 		o.light_energy = l.energy
 		o.omni_range = l.range
-		o.omni_attenuation = 1.4
+		o.omni_attenuation = l.falloff
 		o.shadow_enabled = l.shadow
 		o.light_specular = 0.6
 		o.set_meta("base_energy", l.energy)
