@@ -1,61 +1,41 @@
+// Woven runners and rugs: red field, gold border, repeating diamond motif.
 shader_type spatial;
-render_mode diffuse_burley, specular_schlick_ggx;
-#include "res://shaders/common.gdshaderinc"
+render_mode diffuse_burley;
+#include "res://shaders/noise.gdshaderinc"
 
-// custom.y pattern: 0 runner, 1 rug, 2 banner. custom.z length/width ratio.
-uniform vec3 gold = vec3(0.62, 0.38, 0.1);
-uniform vec3 ink = vec3(0.12, 0.03, 0.02);
+uniform vec3 field : source_color = vec3(0.36, 0.2, 0.12);
+uniform vec3 trim : source_color = vec3(0.5, 0.36, 0.2);
+
+varying vec3 lp;
+varying vec3 halfsize;
+varying vec3 wpos;
 
 void vertex() {
-	COMMON_VERTEX
-}
-
-float diamond(vec2 q) {
-	return abs(q.x) + abs(q.y);
+	LOCAL_SETUP(lp, halfsize);
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
 }
 
 void fragment() {
-	vec2 uv = UV;
-	float aspect = max(v_custom.z, 0.01);
-	float pattern = v_custom.y;
-	vec3 base = COLOR.rgb;
-	vec3 albedo = base;
-	// Carpet/banner top face only; edges stay plain.
-	bool face = pattern > 2.5 ? false : (pattern > 1.5 ? abs(v_local_n.z) > 0.5 : v_local_n.y > 0.5);
-	if (face) {
-		vec2 q = uv - 0.5;
-		vec2 border_d = 0.5 - abs(q);
-		float bw = 0.07;
-		float bwy = bw / aspect;
-		float border = max(step(border_d.x, bw), step(border_d.y, bwy));
-		float inner_line = max(step(abs(border_d.x - bw * 1.4), 0.008), step(abs(border_d.y - bwy * 1.4), 0.008 / aspect));
-		albedo = mix(albedo, gold, border * 0.85);
-		albedo = mix(albedo, gold * 0.8, inner_line * (1.0 - border));
-		if (pattern < 0.5) {
-			// Repeating diamonds along the runner.
-			vec2 r = vec2(q.x, fract(uv.y * aspect * 0.7) - 0.5);
-			float d = diamond(r * vec2(1.0, 1.0));
-			albedo = mix(albedo, gold * 0.9, step(abs(d - 0.28), 0.03) * (1.0 - border));
-			albedo = mix(albedo, ink, step(d, 0.1) * (1.0 - border));
-		} else {
-			// Central medallion with a star.
-			vec2 r = q * vec2(1.0, aspect);
-			float d = length(r);
-			float ang = atan(r.y, r.x);
-			float star = 0.16 + 0.07 * cos(ang * 8.0);
-			albedo = mix(albedo, gold * 0.9, step(abs(d - 0.24), 0.02));
-			albedo = mix(albedo, gold * 0.75, step(d, star) * step(0.04, d));
-			albedo = mix(albedo, ink, step(abs(diamond(r) - 0.36), 0.015) * (1.0 - border));
-		}
-	}
-	// Woven texture and wear.
-	float weave = texture(noise_fine, v_world.xz * 6.0).r;
-	float wear = tri_sample(noise_coarse, v_world, v_local_n, 0.3);
-	albedo *= 0.78 + weave * 0.35;
-	albedo = mix(albedo, albedo * 0.6, smoothstep(0.55, 0.85, wear) * 0.6);
-	NORMAL = bump_normal(NORMAL, VERTEX, weave * 0.002, 1.0);
-	ALBEDO = albedo;
+	vec2 q = lp.xz;
+	vec2 hs = halfsize.xz;
+	float long_axis = hs.y > hs.x ? 1.0 : 0.0;
+	vec2 a = long_axis > 0.5 ? q : q.yx;
+	vec2 ha = long_axis > 0.5 ? hs : hs.yx;
+	float d = min(ha.x - abs(a.x), ha.y - abs(a.y));
+	float border = step(d, 0.14) * step(0.05, d);
+	float line = step(abs(d - 0.2), 0.02);
+	float cell = ha.x * 1.6;
+	vec2 m = vec2(a.x, mod(a.y + cell * 0.5, cell) - cell * 0.5);
+	float diamond = step(abs(abs(m.x) + abs(m.y) - ha.x * 0.45), 0.035);
+	float dot_c = step(abs(m.x) + abs(m.y), ha.x * 0.14);
+	float motif = max(diamond, dot_c) * step(0.25, d);
+	vec3 col = field;
+	col = mix(col, trim, max(max(border, line), motif));
+	float weave = vnoise(wpos * 90.0);
+	float fade = fbm3(wpos * 2.0);
+	col *= (0.8 + 0.3 * weave) * (0.75 + 0.45 * fade);
+	ALBEDO = col;
 	ROUGHNESS = 0.95;
 	SPECULAR = 0.2;
-	BACKLIGHT = albedo * 0.3;
+	NORMAL = bump_normal(VERTEX, NORMAL, weave * 0.003, 1.0);
 }

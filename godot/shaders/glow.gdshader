@@ -1,17 +1,21 @@
+// Self-lit surfaces: embers, lit window panes, glowing coals.
 shader_type spatial;
-render_mode diffuse_burley;
-#include "res://shaders/common.gdshaderinc"
+render_mode unshaded, shadows_disabled;
+#include "res://shaders/noise.gdshaderinc"
 
-// Embers: dark crust with pulsing hot cracks.
+global uniform float anim_time;
+uniform vec3 core : source_color = vec3(1.0, 0.55, 0.18);
+uniform float strength = 2.5;
+
+varying vec3 wpos;
+varying float seed;
+
 void vertex() {
-	COMMON_VERTEX
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	seed = INSTANCE_CUSTOM.x;
 }
 
 void fragment() {
-	float n = tri_sample(noise_fine, v_local * 6.0 + v_custom.x * 9.0, v_local_n, 1.0);
-	float pulse = 0.75 + 0.25 * sin(TIME * 2.0 + v_custom.x * 30.0);
-	float crack = smoothstep(0.45, 0.7, n);
-	ALBEDO = vec3(0.05, 0.03, 0.02);
-	ROUGHNESS = 0.9;
-	EMISSION = COLOR.rgb * crack * pulse * 6.0;
+	float n = fbm3(wpos * 5.0 + vec3(0.0, anim_time * 0.7, 0.0) + seed * 9.0);
+	ALBEDO = core * strength * (0.55 + 0.7 * n) * COLOR.rgb;
 }

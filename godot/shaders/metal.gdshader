@@ -1,25 +1,32 @@
+// Brass, iron, gold and statue bronze.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
-#include "res://shaders/common.gdshaderinc"
+#include "res://shaders/noise.gdshaderinc"
 
-// custom.y: 0 brass, 1 blackened iron.
+uniform vec3 base_color : source_color = vec3(0.78, 0.52, 0.24);
+uniform float roughness_v = 0.35;
+uniform float metal = 0.9;
+uniform float bump = 0.6;
+uniform float self_lit = 0.0;  // fakes bounce light inside gold heaps
+
+varying vec3 wpos;
+varying vec4 inst;
+
 void vertex() {
-	COMMON_VERTEX
+	wpos = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;
+	inst = INSTANCE_CUSTOM;
 }
 
 void fragment() {
-	vec3 p = v_local + v_custom.x * 7.0;
-	float fine = tri_sample(noise_fine, p, v_local_n, 1.6);
-	float coarse = tri_sample(noise_coarse, p, v_local_n, 0.4);
-	float iron = step(0.5, v_custom.y);
-	float edge = edge_factor(v_local, v_scale, 0.02);
-	float tarnish = smoothstep(0.35, 0.75, coarse) * (1.0 - edge);
-	vec3 albedo = COLOR.rgb;
-	albedo = mix(albedo, albedo * vec3(0.55, 0.5, 0.42), tarnish * mix(0.6, 0.4, iron));
-	albedo *= 1.0 + edge * 0.4;
-	NORMAL = bump_normal(NORMAL, VERTEX, fine * 0.002 + coarse * 0.002, 1.0);
-	albedo *= mix(0.2, 1.0, smoothstep(-22.0, 0.0, v_world.y));
-	ALBEDO = albedo;
-	METALLIC = mix(0.9, 0.6, iron);
-	ROUGHNESS = mix(mix(0.28, 0.5, tarnish), mix(0.55, 0.75, tarnish), iron) - edge * 0.1;
+	vec3 p = wpos * 6.0 + inst.xyz * 7.0;
+	float grime = fbm3(p);
+	float fine = vnoise(p * 6.0);
+	vec3 col = base_color * COLOR.rgb;
+	col *= 0.65 + 0.5 * grime;
+	ALBEDO = col;
+	EMISSION = col * self_lit * (0.6 + 0.8 * fine);
+	METALLIC = metal;
+	ROUGHNESS = clamp(roughness_v + (0.5 - grime) * 0.3 + fine * 0.1, 0.05, 1.0);
+	float h = grime * 0.01 + fine * 0.003;
+	NORMAL = bump_normal(VERTEX, NORMAL, h, bump);
 }

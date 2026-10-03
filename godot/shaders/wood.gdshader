@@ -1,33 +1,41 @@
+// Planks and beams: grain runs along each instance's longest axis.
 shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
-#include "res://shaders/common.gdshaderinc"
+#include "res://shaders/noise.gdshaderinc"
+
+uniform vec3 base_color : source_color = vec3(0.30, 0.19, 0.11);
+uniform float roughness_v = 0.8;
+uniform float bump = 1.0;
+
+varying vec3 gp;
+varying vec4 inst;
 
 void vertex() {
-	COMMON_VERTEX
+	vec3 l;
+	vec3 hs;
+	LOCAL_SETUP(l, hs);
+	if (hs.y >= hs.x && hs.y >= hs.z) {
+		l = l.yxz;
+	} else if (hs.z >= hs.x && hs.z >= hs.y) {
+		l = l.zyx;
+	}
+	inst = INSTANCE_CUSTOM;
+	gp = l + inst.xyz * 10.0;
 }
 
 void fragment() {
-	// Grain runs along the longest axis (or vertical for staves: custom.y = 1).
-	vec3 p = v_local + v_custom.x * 13.0;
-	vec3 s = v_scale;
-	vec2 g;
-	if (v_custom.y > 0.5 || (s.y >= s.x && s.y >= s.z)) {
-		g = vec2(p.y * 0.35, (p.x + p.z) * 9.0 + atan(v_local.z, v_local.x) * 2.0);
-	} else if (s.x >= s.z) {
-		g = vec2(p.x * 0.35, (p.y + p.z) * 9.0);
-	} else {
-		g = vec2(p.z * 0.35, (p.y + p.x) * 9.0);
-	}
-	float grain = texture(noise_fine, g * vec2(0.6, 0.12)).r;
-	float rings = sin(grain * 40.0) * 0.5 + 0.5;
-	float coarse = texture(noise_coarse, g * 0.05).r;
-	float h = rings * 0.004 + coarse * 0.006;
-	NORMAL = bump_normal(NORMAL, VERTEX, h, 1.0);
-	float edge = edge_factor(v_local, v_scale, 0.025);
-	vec3 albedo = COLOR.rgb * (0.7 + 0.35 * rings) * (0.8 + 0.4 * coarse);
-	albedo *= 1.0 + edge * 0.3;
-	albedo *= mix(0.2, 1.0, smoothstep(-22.0, 0.0, v_world.y));
-	ALBEDO = albedo;
-	ROUGHNESS = 0.78 - edge * 0.15;
-	SPECULAR = 0.4;
+	float streak = vnoise(vec3(gp.x * 1.5, gp.y * 38.0, gp.z * 38.0));
+	float fine = vnoise(vec3(gp.x * 4.0, gp.y * 120.0, gp.z * 120.0));
+	float ring = fract(vnoise(vec3(gp.x * 0.6, gp.y * 5.0, gp.z * 5.0)) * 5.0);
+	float knot = smoothstep(0.78, 0.9, vnoise(gp * vec3(3.0, 9.0, 9.0)));
+	vec3 col = base_color * COLOR.rgb;
+	col *= 0.62 + 0.55 * streak;
+	col *= 0.85 + 0.3 * smoothstep(0.1, 0.9, ring);
+	col *= 0.9 + 0.2 * fine;
+	col *= 1.0 - knot * 0.5;
+	ALBEDO = col;
+	ROUGHNESS = roughness_v;
+	SPECULAR = 0.3;
+	float h = streak * 0.012 + fine * 0.004 - knot * 0.01;
+	NORMAL = bump_normal(VERTEX, NORMAL, h, bump);
 }
