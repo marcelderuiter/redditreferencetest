@@ -149,10 +149,12 @@ static func build() -> Layout:
 	L.prop("altar", "chapel", 0.5, 0.3)
 	L.prop("statue_knight", "chapel", 0.5, 0.5, {weapon = "sword", kneel = true})
 	L.prop("runner", "chapel", 0.5, 0.8, {size = Vector2(1.4, 2.4)})
-	L.prop("candle_stand", "chapel", 0.1, 0.35)
-	L.prop("candle_stand", "chapel", 0.9, 0.35)
-	L.prop("candle_stand", "chapel", 0.12, 0.95)
-	L.prop("candle_stand", "chapel", 0.88, 0.95)
+	# Four stands in a small room: dim pools, so the statue niche stays the
+	# focus instead of one white-gold bloom.
+	L.prop("candle_stand", "chapel", 0.1, 0.35, {light = 0.6})
+	L.prop("candle_stand", "chapel", 0.9, 0.35, {light = 0.6})
+	L.prop("candle_stand", "chapel", 0.12, 0.95, {light = 0.6})
+	L.prop("candle_stand", "chapel", 0.88, 0.95, {light = 0.6})
 	L.feature("alcove", "chapel", "n", 0.5)
 	L.feature("banner", "chapel", "w", 0.4)
 	L.feature("banner", "chapel", "e", 0.4)

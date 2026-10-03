@@ -51,7 +51,9 @@ static func rotated_half(size: Vector2, rot_deg: float) -> Vector2:
 
 # ---------------------------------------------------------------- builders
 
-const CANDLE_LIGHT := Color(1.0, 0.68, 0.5)
+# Candle and flame light, about 2200 K: the saturated colour lives in the
+# light pools, not in the paint.
+const CANDLE_LIGHT := Color(1.25, 0.72, 0.25)   # same luminance as the old cream, 2200 K
 
 
 static func build_all(kit: Kit, layout: Layout) -> void:
@@ -75,7 +77,7 @@ static func build(kit: Kit, p: Layout.Prop) -> void:
 			candles(kit, xf.origin, 3 + kit.rng.randi() % 3, 0.2)
 			kit.light(xf.origin + Vector3(0, 0.6, 0), CANDLE_LIGHT, 2.6, 4.5)
 		"candle_stand":
-			candle_stand(kit, xf)
+			candle_stand(kit, xf, p.opts.get("light", 1.0))
 		"brazier":
 			brazier(kit, xf.origin)
 		"table":
@@ -127,7 +129,9 @@ static func candle(kit: Kit, base: Vector3, h: float, r := 0.035) -> void:
 	kit.put("cyl8", "wax", base + Vector3(0, h * 0.5, 0), Vector3(r * 2.0, h, r * 2.0), 0.0, kit.tint(Color(1, 1, 1), 0.08))
 	kit.put("cyl8", "wax", base + Vector3(r * 0.6, h * 0.75, 0), Vector3(r * 0.6, h * 0.4, r * 0.6), 0.0)
 	kit.put("flame", "flame", base + Vector3(0, h + r * 1.8, 0), Vector3(r * 2.0, r * 5.0, r * 2.0))
-	kit.put("flame", "flame", base + Vector3(0, h + r * 1.6, 0), Vector3(r * 6.0, r * 8.0, r * 6.0), 0.0)
+	# A faint amber halo shell: clusters of candles must not add up to a
+	# pale fog around a crisp flame.
+	kit.put("flame", "flame", base + Vector3(0, h + r * 1.6, 0), Vector3(r * 5.0, r * 7.0, r * 5.0), 0.0, Color(0.35, 0.24, 0.12))
 	kit.put("sphere", "glow", base + Vector3(0, h + r * 1.4, 0), Vector3(r * 0.9, r * 2.2, r * 0.9))
 
 
@@ -140,7 +144,8 @@ static func candles(kit: Kit, base: Vector3, n: int, spread: float) -> void:
 	kit.put("cyl8", "wax", base + Vector3(0, 0.01, 0), Vector3(spread * 1.6, 0.02, spread * 1.6), 0.0, Color(0.9, 0.85, 0.75))
 
 
-static func candle_stand(kit: Kit, xf: Transform3D) -> void:
+## light scales its omni (a cluster of stands in one room stays a pool).
+static func candle_stand(kit: Kit, xf: Transform3D, light := 1.0) -> void:
 	var o := xf.origin
 	for i in 3:
 		var a := TAU * i / 3.0 + 0.3
@@ -149,7 +154,7 @@ static func candle_stand(kit: Kit, xf: Transform3D) -> void:
 	kit.put("sphere", "brass", o + Vector3(0, 0.5, 0), Vector3(0.09, 0.09, 0.09))
 	kit.put("cyl", "brass", o + Vector3(0, 1.26, 0), Vector3(0.22, 0.04, 0.22))
 	candle(kit, o + Vector3(0, 1.28, 0), kit.rng.randf_range(0.14, 0.24), 0.045)
-	kit.light(o + Vector3(0, 1.75, 0), CANDLE_LIGHT, 3.0, 5.0)
+	kit.light(o + Vector3(0, 1.75, 0), CANDLE_LIGHT, 1.8 * light, 3.5)
 
 
 static func brazier(kit: Kit, base: Vector3) -> void:
@@ -225,10 +230,11 @@ static func big_statue(kit: Kit, xf: Transform3D, opts: Dictionary) -> void:
 	if opts.get("robed", false):
 		_l(kit, xf, "cone", m, Vector3(0, 2.72, -0.02), Vector3(0.46, 0.5, 0.46))
 		_l(kit, xf, "box", "brass", Vector3(0, 1.95, 0.3), Vector3(0.1, 0.4, 0.04))
-		# Votive candles at the plinth light the figure from below.
+		# Votive candles at the plinth light the figure from below: a tight
+		# pool on the statue and its niche, not the floor.
 		for sx in [-0.5, 0.5]:
 			candles(kit, xf * Vector3(sx, 0.62, 0.45), 3, 0.1)
-		kit.light(xf * Vector3(0, 1.0, 1.0), Color(1.0, 0.7, 0.45), 2.5, 4.0)
+		kit.light(xf * Vector3(0, 1.3, 0.75), CANDLE_LIGHT, 1.5, 2.2)
 	else:
 		_l(kit, xf, "cyl", "brass", Vector3(0, 2.84, 0.02), Vector3(0.3, 0.12, 0.3))
 		_l(kit, xf, "box", "iron", Vector3(0, 1.5, 0.42), Vector3(0.08, 1.4, 0.03))
@@ -395,8 +401,10 @@ static func altar(kit: Kit, xf: Transform3D) -> void:
 		var c := xf * Vector3(x, 1.0, kit.jitter(0.25))
 		candle(kit, c, kit.rng.randf_range(0.15, 0.4), 0.04)
 	_l(kit, xf, "block", "gold", Vector3(0, 1.08, 0), Vector3(0.3, 0.16, 0.2))
-	kit.light(xf * Vector3(-0.6, 1.6, 0.4), CANDLE_LIGHT, 2.0, 4.0)
-	kit.light(xf * Vector3(0.6, 1.6, 0.4), CANDLE_LIGHT, 2.0, 4.0)
+	# Above and in front of the candle row, so the wax beside them doesn't
+	# blow out (the falloff is steep near the source).
+	kit.light(xf * Vector3(-0.6, 2.2, 0.6), CANDLE_LIGHT, 0.6, 2.5)
+	kit.light(xf * Vector3(0.6, 2.2, 0.6), CANDLE_LIGHT, 0.6, 2.5)
 
 
 static func shelf(kit: Kit, xf: Transform3D) -> void:

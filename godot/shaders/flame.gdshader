@@ -19,5 +19,5 @@ void fragment() {
 	float facing = clamp(abs(dot(NORMAL, VIEW)), 0.0, 1.0);
 	float k = pow(facing, 1.6);
 	vec3 col = mix(core * vec3(1.0, 0.55, 0.25), vec3(1.0, 0.9, 0.65), k);
-	ALBEDO = col * strength * k;
+	ALBEDO = col * strength * k * COLOR.rgb;   // instance colour dims halo shells
 }

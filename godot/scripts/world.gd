@@ -49,13 +49,14 @@ static func environment() -> Environment:
 	env.glow_enabled = true
 	env.glow_intensity = 0.8
 	env.glow_bloom = 0.0
-	env.glow_hdr_threshold = 0.9
+	env.glow_hdr_threshold = 1.2   # only flame cores bloom, not the wax and stone they light
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.set_glow_level(0, 0.0)
 	env.set_glow_level(1, 1.0)
 	env.set_glow_level(2, 1.0)
-	env.set_glow_level(3, 0.6)
-	env.set_glow_level(4, 0.3)
+	# Only tight halos: wide levels stack clustered flames into a haze.
+	env.set_glow_level(3, 0.3)
+	env.set_glow_level(4, 0.1)
 	env.ssao_enabled = true
 	env.ssao_radius = 0.8
 	env.ssao_intensity = 4.0
@@ -136,6 +137,9 @@ static func setup(parent: Node3D, lights: Array[Dictionary]) -> Array[OmniLight3
 		o.omni_range = l.range
 		o.omni_attenuation = l.falloff
 		o.shadow_enabled = l.shadow
+		# Flames above the floors keep their amber off the piers below.
+		if l.pos.y > Kit.UNDER_Y:
+			o.light_cull_mask = 0xFFFFF & ~Kit.UNDER_LAYER
 		o.light_specular = 0.6
 		o.set_meta("base_energy", l.energy)
 		parent.add_child(o)

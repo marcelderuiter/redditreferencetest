@@ -117,7 +117,7 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 
 
 ## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
-func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.4) -> void:
+func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.6) -> void:
 	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 
@@ -337,7 +337,7 @@ func _material(kind: String) -> Material:
 			var p: Array = {
 				"iron": [Color(0.24, 0.23, 0.22), 0.5, 0.45, 0.0],
 				"brass": [Color(0.52, 0.39, 0.25), 0.42, 0.8, 0.0],
-				"gold": [Color(0.7, 0.55, 0.33), 0.3, 0.85, 0.0],
+				"gold": [Color(0.84, 0.64, 0.34), 0.38, 0.7, 0.0],
 				"statue": [Color(0.36, 0.34, 0.32), 0.42, 0.35, 0.0],
 			}[kind]
 			m.set_shader_parameter("base_color", p[0])
