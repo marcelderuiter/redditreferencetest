@@ -69,7 +69,7 @@ static func environment() -> Environment:
 	# Dark height fog below the floors: each deeper plane of piers sinks
 	# further into near-black, so depth (not light) separates them.
 	env.fog_height = tune("fog_height", -9)
-	env.fog_height_density = tune("fog_hd", 0.05)
+	env.fog_height_density = tune("fog_hd", 0.07)
 	env.fog_sky_affect = 0.0
 	return env
 

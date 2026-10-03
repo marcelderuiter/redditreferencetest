@@ -147,7 +147,7 @@ func tint(base: Color, value := 0.12, warm := 0.03) -> Color:
 ## falloff is the omni distance decay exponent (2 = inverse square: tight pools).
 func light(pos: Vector3, color: Color, energy: float, range_m: float, shadow := false, flicker := 1.0, falloff := 1.6) -> void:
 	if color == Props.CANDLE_LIGHT:
-		energy *= World.tune("candle", 1.44)
+		energy *= World.tune("candle", 1.2)
 	lights.append({"pos": pos, "color": color, "energy": energy, "range": range_m, "shadow": shadow, "flicker": flicker, "falloff": falloff})
 
 
