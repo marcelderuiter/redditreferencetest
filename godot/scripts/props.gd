@@ -59,8 +59,8 @@ func light(pos: Vector3, energy := 1.0, rng_ := 3.6, color := CANDLE_LIGHT) -> v
 ## One candle: wax cylinder + flame. Height h.
 func candle(p: Vector3, h := 0.25, r := 0.045) -> void:
 	b.box("cyl8", "wax", p + Vector3(0, h * 0.5, 0), Vector3(r * 2, h, r * 2), 0.0, Color(1, 1, 1).darkened(rng.randf() * 0.15))
-	var fh := r * 3.2
-	b.add("flame", "flame", Transform3D(Basis.from_scale(Vector3(r * 2.2, fh, r * 2.2)), p + Vector3(0, h + 0.01, 0)))
+	var fh := r * 4.0
+	b.add("flame", "flame", Transform3D(Basis.from_scale(Vector3(r * 3.0, fh, r * 3.0)), p + Vector3(0, h + 0.01, 0)))
 
 
 func candle_cluster(p: Vector3, n: int, spread: float, with_light: bool) -> void:

@@ -2,8 +2,8 @@
 shader_type spatial;
 render_mode unshaded, blend_add, cull_disabled, depth_draw_never, shadows_disabled;
 
-uniform vec3 core : source_color = vec3(1.0, 0.85, 0.5);
-uniform vec3 outer : source_color = vec3(1.0, 0.38, 0.06);
+uniform vec3 core : source_color = vec3(1.0, 0.72, 0.32);
+uniform vec3 outer : source_color = vec3(1.0, 0.42, 0.08);
 uniform float energy = 3.0;
 
 void fragment() {

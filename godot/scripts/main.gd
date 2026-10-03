@@ -150,13 +150,13 @@ func _setup_environment() -> void:
 	env.fog_light_color = Color(0.085, 0.1, 0.14)
 	env.fog_density = 0.01
 	env.fog_height = -8.0
-	env.fog_height_density = 0.04
+	env.fog_height_density = 0.025
 	env.fog_sky_affect = 0.0
 	env.glow_enabled = true
-	env.glow_intensity = 0.6
+	env.glow_intensity = 0.8
 	env.glow_strength = 1.0
-	env.glow_bloom = 0.05
-	env.glow_hdr_threshold = 1.0
+	env.glow_bloom = 0.0
+	env.glow_hdr_threshold = 0.9
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.ssao_enabled = true
 	env.ssao_radius = 0.6

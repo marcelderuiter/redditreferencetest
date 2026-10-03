@@ -96,6 +96,8 @@ func build(parent: Node3D) -> void:
 			"bridge": _bridge(link)
 			"stairs": _stairs(link)
 			"door": pass
+		if link.kind != "door":
+			_under_ties(link)
 	_props()
 	_backdrop()
 	print("instances: %d, lights: %d" % [b.instance_count(), lights.size()])
@@ -532,6 +534,24 @@ func _bridge(link: Dictionary) -> void:
 			var pc := p0.lerp(p1, 0.3 + 0.4 * k) + cross * (w * 0.5 - 0.15) * (1.0 if k else -1.0)
 			var ch := rng.randf_range(3.0, 7.0)
 			b.box("box", "iron", pc + Vector3(0, -depth - ch * 0.5, 0), Vector3(0.05, ch, 0.05))
+
+
+## Lower cross-ties between the two rooms' substructures under a connection:
+## timber beams anchored in the slab aprons / pillars on both sides, with chains.
+func _under_ties(link: Dictionary) -> void:
+	var dir := Vector3(link.dir.x, 0, link.dir.y)
+	var cross := Vector3(-dir.z, 0, dir.x)
+	var a: Vector3 = link.p0 - dir * 0.6
+	var c: Vector3 = link.p1 + dir * 0.6
+	var low: float = min(a.y, c.y)
+	for k in 2:
+		var y := low - 5.0 - k * rng.randf_range(4.0, 7.0)
+		var off: Vector3 = cross * rng.randf_range(-1.0, 1.0)
+		_strut(Vector3(a.x, y, a.z) + off, Vector3(c.x, y, c.z) + off, 0.3, "wood_dark")
+		_strut(Vector3(a.x, y - 0.4, a.z) + off, Vector3(c.x, y - 0.4, c.z) + off, 0.12, "bronze")
+		var mid := (Vector3(a.x, y, a.z) + Vector3(c.x, y, c.z)) * 0.5 + off
+		var ch := rng.randf_range(2.0, 5.0)
+		b.box("box", "iron", mid + Vector3(0, -ch * 0.5, 0), Vector3(0.05, ch, 0.05))
 
 
 func _strut(a: Vector3, c: Vector3, thick: float, mat: String) -> void:
