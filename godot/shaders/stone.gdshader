@@ -17,6 +17,9 @@ uniform float under_min = 0.75;
 uniform float detail = 1.0;
 // Direction the sun travels (World.SUN_DIR): lit rims only where it reaches.
 uniform vec3 sun_dir = vec3(0.35, -0.92, 0.12);
+// Below the floors the sun never reaches; World's pier key (this direction)
+// lights the faces there instead, so rims follow it.
+uniform vec3 under_key_dir = vec3(0.5, -0.45, -0.74);
 // Metric chamfer (m) for bevelled boxes, rebuilt here so it keeps its size on
 // any block (0 = take the mesh as it is). Each corner gets its own amount:
 // most are worn, some knocked off deep, a few left sharp.
@@ -78,14 +81,15 @@ void fragment() {
 	float block = mix(0.6, 1.0, smoothstep(0.06, 0.12, halfsize.y));
 	float top_face = smoothstep(0.6, 0.9, wnrm.y);
 	float side = 1.0 - smoothstep(0.3, 0.7, abs(wnrm.y));
-	float sunlit = clamp(dot(wnrm, -normalize(sun_dir)) * 2.0, 0.0, 1.0)
-		* (1.0 - smoothstep(under_top, under_bottom, wpos.y));
+	float under = smoothstep(under_top, under_bottom, wpos.y);
+	float sunlit = mix(clamp(dot(wnrm, -normalize(sun_dir)) * 2.0, 0.0, 1.0),
+		clamp(dot(wnrm, -normalize(under_key_dir)) * 2.0, 0.0, 1.0), under);
 	col *= 1.0 + rim * (0.06 + (0.12 + 0.3 * top_face * block) * sunlit) * (0.5 + big);
 	col *= 1.0 - 0.38 * (1.0 - smoothstep(0.0, 0.08, edge_d)) * side;
 	float up = clamp(wnrm.y, 0.0, 1.0);
 	col = mix(col, col * vec3(1.1, 1.05, 0.98), up * wear);
 	col *= mix(0.8, 1.0, clamp(wnrm.y + 1.0, 0.0, 1.0));
-	col *= mix(1.0, under_min, smoothstep(under_top, under_bottom, wpos.y));
+	col *= mix(1.0, under_min, under);
 	ALBEDO = col;
 	ROUGHNESS = roughness_v - rim * 0.1;
 	SPECULAR = 0.35;

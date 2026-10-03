@@ -7,6 +7,7 @@ extends RefCounted
 class Batch:
 	var mesh := ""
 	var mat := ""
+	var under := false
 	var count := 0
 	var data := PackedFloat32Array()
 
@@ -21,6 +22,11 @@ class Batch:
 const NO_SHADOW := ["flame", "glow", "ember", "window_glow", "backdrop"]
 ## Invisible geometry that only casts shadows (light blockers).
 const SHADOW_ONLY := ["occluder"]
+## Render layer bit of the pieces below the floors (piers, shaft walls, legs):
+## the sun never reaches them, so World lights them with their own key.
+const UNDER_LAYER := 4
+const UNDER_Y := -2.4
+const NOT_UNDER := ["backdrop", "occluder", "flame", "glow", "ember", "window_glow", "void"]
 ## Render layer bit of the distant backdrop masonry (lit by World's abyss light).
 const BACKDROP_LAYER := 2
 ## Metric chamfer (m) of the bevelled meshes in the stone materials. The stone
@@ -58,11 +64,15 @@ func _init(seed: int) -> void:
 
 func add(mesh: String, mat: String, xf: Transform3D, color := Color.WHITE, custom := Color(0, 0, 0, 0)) -> void:
 	var key := mesh + "|" + mat
+	var under := xf.origin.y < UNDER_Y and not NOT_UNDER.has(mat)
+	if under:
+		key += "|under"
 	var b: Batch = batches.get(key)
 	if b == null:
 		b = Batch.new()
 		b.mesh = mesh
 		b.mat = mat
+		b.under = under
 		batches[key] = b
 	if custom.a == 0.0:
 		custom = Color(rng.randf(), rng.randf(), rng.randf(), 1.0)
@@ -130,6 +140,8 @@ func flush(parent: Node3D) -> int:
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 		if b.mat == "backdrop":
 			mmi.layers = BACKDROP_LAYER
+		elif b.under:
+			mmi.layers = UNDER_LAYER
 		parent.add_child(mmi)
 		total += b.count
 	batches.clear()
@@ -303,6 +315,7 @@ func _material(kind: String) -> Material:
 		"stone", "stone_dark", "floor", "backdrop":
 			m.shader = load("res://shaders/stone.gdshader")
 			m.set_shader_parameter("sun_dir", World.SUN_DIR.normalized())
+			m.set_shader_parameter("under_key_dir", World.PIER_KEY_DIR.normalized())
 			if kind == "stone_dark":
 				m.set_shader_parameter("base_color", Color(0.30, 0.27, 0.25))
 			elif kind == "floor":

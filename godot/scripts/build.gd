@@ -901,6 +901,11 @@ func _braces(x0: float, x1: float, z: float, top: float, beam: bool) -> void:
 	if w > 2.0:
 		var lx := (x0 + x1) * 0.5 + kit.jitter(w * 0.2)
 		kit.span("box", "iron", Vector3(lx, yt - 0.1, z + 0.05), Vector3(lx, yt - 0.55, z + 0.05), Vector2(0.03, 0.03))
+		# Hung on a short chain (random state kept so the rest of the build
+		# stays exactly as it was).
+		var st := kit.rng.state
+		chain(Vector3(lx, yt - 0.12, z + 0.05), Vector3(lx, yt - 0.62, z + 0.05), 0.1)
+		kit.rng.state = st
 		_lantern(Vector3(lx, yt - 0.78, z - 0.3))
 	if w > 2.0 and kit.rng.randf() < 0.5:
 		var y0 := top - 0.6
