@@ -109,8 +109,8 @@ func _setup_environment() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.025, 0.03, 0.045)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.38, 0.4, 0.5)
-	env.ambient_light_energy = 0.35
+	env.ambient_light_color = Color(0.34, 0.42, 0.45)
+	env.ambient_light_energy = 0.24
 	env.tonemap_mode = Environment.TONE_MAPPER_AGX
 	env.tonemap_exposure = 1.6
 	env.fog_enabled = true
@@ -128,13 +128,15 @@ func _setup_environment() -> void:
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SCREEN
 	env.ssao_enabled = true
 	env.ssao_radius = 0.6
-	env.ssao_intensity = 2.5
+	env.ssao_intensity = 4.0
+	env.ssao_power = 1.8
+	env.ssao_detail = 1.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	world.add_child(we)
 	var sun := DirectionalLight3D.new()
 	sun.light_color = Color(0.95, 0.85, 0.75)
-	sun.light_energy = 0.4
+	sun.light_energy = 0.5
 	sun.rotation_degrees = Vector3(-40, -30, 0)
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 140.0
@@ -142,7 +144,7 @@ func _setup_environment() -> void:
 	world.add_child(sun)
 	# Cool fill from the abyss side so shadowed faces keep some blue.
 	var fill := DirectionalLight3D.new()
-	fill.light_color = Color(0.45, 0.55, 0.8)
+	fill.light_color = Color(0.42, 0.58, 0.68)
 	fill.light_energy = 0.4
 	fill.rotation_degrees = Vector3(-20, 150, 0)
 	fill.light_specular = 0.0

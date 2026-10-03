@@ -3,7 +3,7 @@ shader_type spatial;
 render_mode diffuse_burley, specular_schlick_ggx;
 #include "res://shaders/noise.gdshaderinc"
 
-uniform vec3 albedo : source_color = vec3(0.55, 0.42, 0.22);
+uniform vec3 albedo : source_color = vec3(0.55, 0.45, 0.22);
 uniform float metallic_v = 0.85;
 uniform float roughness_v = 0.42;
 uniform float tarnish = 0.45;

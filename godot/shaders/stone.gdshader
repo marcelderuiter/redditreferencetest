@@ -7,7 +7,7 @@ render_mode diffuse_burley, specular_schlick_ggx;
 uniform vec3 albedo : source_color = vec3(0.41, 0.38, 0.34);
 uniform float bump_strength = 1.1;
 uniform float bump_freq = 9.0;
-uniform float grime = 0.5;
+uniform float grime = 0.8;
 uniform float roughness_base = 0.86;
 
 varying vec3 wpos;
@@ -28,7 +28,7 @@ void fragment() {
 	// Chamfer faces have diagonal local normals: treat them as worn edges / grout.
 	float flat_face = max(max(abs(lnorm.x), abs(lnorm.y)), abs(lnorm.z));
 	float edge = smoothstep(0.98, 0.7, flat_face);
-	vec3 c = albedo * COLOR.rgb * (0.72 + 0.5 * n) * (0.88 + 0.24 * fine);
+	vec3 c = albedo * COLOR.rgb * (0.62 + 0.7 * n) * (0.8 + 0.4 * fine);
 	// Grime collects low on vertical faces and in the chamfers.
 	float down = clamp(-wnorm.y, 0.0, 1.0);
 	c *= 1.0 - grime * (0.35 * edge + 0.25 * down);

@@ -135,7 +135,7 @@ func _rect_floor(room: Dictionary) -> void:
 				var top := y + rng.randf_range(-0.025, 0.02)
 				var c := Vector3((x0 + x1) * 0.5, top - h * 0.5, z + dz * 0.5)
 				var tb := Basis(Vector3.UP, rng.randf_range(-0.04, 0.04)) * Basis(Vector3.RIGHT, rng.randf_range(-0.05, 0.05)) * Basis(Vector3.BACK, rng.randf_range(-0.05, 0.05))
-				b.add("bbox_s", "floor", Transform3D(tb * Basis.from_scale(Vector3(x1 - x0 - 0.035, h, dz - 0.035)), c), _tint(0.95, 0.6))
+				b.add("bbox_s", "floor", Transform3D(tb * Basis.from_scale(Vector3(x1 - x0 - 0.035, h, dz - 0.035)), c), _tint(0.95, 0.8))
 			x += dx
 		z += dz
 		row += 1

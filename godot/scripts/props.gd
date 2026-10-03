@@ -194,7 +194,7 @@ func hearth(p: Vector3) -> void:
 		b.box("bbox", "stone", p + Vector3(side * 1.1, 1.6, -0.55), Vector3(0.3, 1.5, 0.5))
 	b.box("bbox", "stone", p + Vector3(0, 2.5, -0.55), Vector3(2.6, 0.5, 0.7), 0.0, Color(0.6, 0.5, 0.45))
 	b.box("bbox", "stone", p + Vector3(0, 3.3, -0.65), Vector3(1.2, 1.2, 0.5), 0.0, Color(0.6, 0.5, 0.45))
-	light(p + Vector3(0, 1.6, 0.8), 4.0, 8.0, Color(1.0, 0.52, 0.2))
+	light(p + Vector3(0, 1.6, 0.8), 4.0, 8.0, Color(1.0, 0.62, 0.22))
 
 
 func anvil(p: Vector3, yaw: float) -> void:
