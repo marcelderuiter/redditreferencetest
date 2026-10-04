@@ -173,7 +173,8 @@ render with the freshly fitted LUT.
 | m25_window_lights | bluish abyss fog, backdrop lights come from visible windows | 71.5 | 84.6 |
 | m26_hall_spires | hall runner and knight moved to the reference's spot, tower pinnacles, neutral fog | 67.8 | 84.6 |
 | m27_hall_spires_bluefog | same with the bluish fog restored | 70.9 | 84.6 |
-| loop_final | after the perceptual loop below (iterations 1–11) | **55.7** | **89.8** |
+| loop_final | after the perceptual loop below (iterations 1–11) | 55.7 | 89.8 |
+| tuned | scripts/tune.py, 3 passes (sun 1.81, candle 1.2, rim 0.59, pier 0.88, fog_hd 0.098, fog_height -9) | **54.9** | **93.6** |
 
 The raw score fell in the loop, because the raw render is now darker and
 more sculpted before grading. The graded result is what the game shows.
